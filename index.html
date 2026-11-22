@@ -53,6 +53,13 @@
     background:linear-gradient(180deg,#fff4cf 10%,#f5c451 55%,#c98a1c 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
   .prompt{margin:10px 0 20px;font-size:clamp(19px,4.8vw,24px);font-weight:800;color:var(--gold-2)}
   .fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .sections{margin-top:16px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+  .sec-label{font-weight:800;color:var(--muted);font-size:15px}
+  .sec-list{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .sec{border:2px solid #f5c45155;background:#ffffff12;color:var(--ink);border-radius:12px;padding:8px 14px;font-weight:800;font-size:16px;cursor:pointer;transition:.15s}
+  .sec:hover{border-color:#f5c451aa}
+  .sec.on{background:linear-gradient(180deg,#ffe7a0,#f5b52e);color:#3a2300;border-color:#f5b52e}
+  .sections.bad .sec{border-color:var(--bad);animation:shake .4s}
   .field label{display:block;margin-bottom:6px;font-size:14.5px;font-weight:700;color:var(--muted)}
   .field input{width:100%;font:inherit;font-size:clamp(17px,4.4vw,21px);font-weight:800;text-align:center;color:#1c1606;
     background:#fffaf0;border:2.5px solid #f5c45155;border-radius:14px;padding:12px 6px;outline:none;transition:border-color .2s,box-shadow .2s}
@@ -176,6 +183,10 @@
       <div class="field"><label for="n1">الاسم</label><input id="n1" lang="ar" dir="rtl" maxlength="20" autocapitalize="off" spellcheck="false"></div>
       <div class="field"><label for="n2">اسم الأب</label><input id="n2" lang="ar" dir="rtl" maxlength="20" autocapitalize="off" spellcheck="false"></div>
       <div class="field"><label for="n3">اسم الجد</label><input id="n3" lang="ar" dir="rtl" maxlength="20" autocapitalize="off" spellcheck="false"></div>
+    </div>
+    <div class="sections hidden" id="sectionsBox">
+      <span class="sec-label">شعبتك:</span>
+      <div class="sec-list" id="secList" role="radiogroup" aria-label="الشعبة"></div>
     </div>
     <p class="hint info" id="hint">اكتب في كل خانة اسماً واحداً بالحروف العربية</p>
     <button class="btn" id="enterBtn" type="submit">اكتشف الأسرار 🔑</button>
@@ -341,6 +352,7 @@
       $("bg").style.backgroundImage = `url("${asset(board.src)}")`;
       $("boardImg").src = asset(board.src); // تحميل مسبق أثناء كتابة الاسم
       if (PREVIEW) { $("n1").value = "طالب"; $("n2").value = "تجريبي"; $("n3").value = "للمعاينة"; }
+      renderSections();
       // تنزيل الأصوات المستخدمة فقط أثناء كتابة الطالب اسمه
       const used = new Set(boxes.map((b, i) => boxSound(i)).concat(finaleSound()).filter(Boolean));
       used.forEach(Sound.prefetch);
@@ -423,14 +435,40 @@
     return !msg;
   }
 
+  /* ---------- الشعبة ---------- */
+  let section = "";
+  const sectionList = () => (Array.isArray(cfg.sections) ? cfg.sections : ["تاسع5", "تاسع6", "تاسع7", "تاسع8"]).map(String).filter(Boolean);
+  function renderSections() {
+    const list = sectionList(), box = $("sectionsBox"), wrap = $("secList");
+    box.classList.toggle("hidden", !list.length);
+    wrap.innerHTML = "";
+    list.forEach((name) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "sec"; b.textContent = name;
+      b.setAttribute("role", "radio"); b.setAttribute("aria-checked", "false");
+      b.addEventListener("click", () => {
+        section = name; box.classList.remove("bad");
+        wrap.querySelectorAll(".sec").forEach((x) => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on ? "true" : "false"); });
+        if ($("hint").textContent.includes("شعبت")) hint("");
+      });
+      wrap.appendChild(b);
+    });
+    if (PREVIEW && list.length) wrap.firstChild.click();
+  }
+
   $("gateForm").addEventListener("submit", (e) => {
     e.preventDefault();
     for (let i = 0; i < 3; i++) if (!check(i, true)) return;
+    if (sectionList().length && !section) {
+      const box = $("sectionsBox"); box.classList.remove("bad"); void box.offsetWidth; box.classList.add("bad");
+      hint("اختر شعبتك"); return;
+    }
     Sound.unlock();
     student = fields.map((f) => normalize(f.value).trim());
     progressKey = `sanadeeq:${cfg.version}:${student.join(" ")}`;
     seen = (store.get(progressKey, []) || []).filter((n) => Number.isInteger(n) && n >= 0 && n < 10);
     $("helloName").textContent = student[0];
+    if (!PREVIEW && window.SanadeeqLog) window.SanadeeqLog.start({ name: student.join(" "), section, version: cfg.version, opened: seen.slice() });
     buildBoard();
     show("playScreen");
     fit();
@@ -570,7 +608,10 @@
 
   function finishWait() {
     clearTimeout(timer);
-    if (!seen.includes(current)) { seen.push(current); store.set(progressKey, seen); }
+    if (!seen.includes(current)) {
+      seen.push(current); store.set(progressKey, seen);
+      if (!PREVIEW && window.SanadeeqLog) window.SanadeeqLog.opened(seen.slice());
+    }
     $("ring").classList.add("hidden");
     $("waitNote").textContent = "";
     $("skipBtn").classList.add("hidden");
@@ -643,6 +684,50 @@
 
   start();
 })();
+</script>
+<script type="module">
+// تسجيل دخول الطالب وما فتحه في قاعدة بيانات Firebase (مشروع sanadeeq) ليظهر في لوحة المعلم
+const FB = {
+  apiKey: "AIzaSyBPvtM0azYwbAgPfBu8WROT5SJgB7Uk9go", authDomain: "sanadeeq-eba14.firebaseapp.com", projectId: "sanadeeq-eba14",
+  storageBucket: "sanadeeq-eba14.firebasestorage.app", messagingSenderId: "363973827345", appId: "1:363973827345:web:2fa5e49111ca4d247b8ab0"
+};
+const V = "10.12.2", CDN = `https://www.gstatic.com/firebasejs/${V}/`;
+let ready = null, ref = null, pending = Promise.resolve();
+function load() {
+  if (!ready) ready = (async () => {
+    const [{ initializeApp }, A, F] = await Promise.all([import(CDN + "firebase-app.js"), import(CDN + "firebase-auth.js"), import(CDN + "firebase-firestore.js")]);
+    const app = initializeApp(FB), auth = A.getAuth(app), db = F.getFirestore(app);
+    await auth.authStateReady();
+    const user = auth.currentUser || (await A.signInAnonymously(auth)).user;
+    return { db, F, uid: user.uid };
+  })();
+  return ready;
+}
+const queue = (fn) => (pending = pending.then(fn).catch((e) => console.warn("sanadeeq log:", e && e.code || e)));
+window.SanadeeqLog = {
+  start(info) {
+    queue(async () => {
+      const { db, F, uid } = await load();
+      const id = (uid + "_" + info.version + "_" + info.section + "_" + info.name).replace(/[\/\s]+/g, "-").slice(0, 700);
+      ref = F.doc(db, "visits", id);
+      const snap = await F.getDoc(ref);
+      if (snap.exists()) {
+        const opened = [...new Set([...(snap.data().opened || []), ...info.opened])].slice(0, 10);
+        await F.updateDoc(ref, { opened, count: opened.length, last: F.serverTimestamp() });
+      } else {
+        await F.setDoc(ref, { uid, version: info.version, name: info.name, section: info.section || "",
+          opened: info.opened, count: info.opened.length, first: F.serverTimestamp(), last: F.serverTimestamp() });
+      }
+    });
+  },
+  opened(list) {
+    queue(async () => {
+      if (!ref) return;
+      const { F } = await load();
+      await F.updateDoc(ref, { opened: list.slice(0, 10), count: Math.min(10, list.length), last: F.serverTimestamp() });
+    });
+  }
+};
 </script>
 </body>
 </html>

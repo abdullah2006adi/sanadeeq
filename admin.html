@@ -95,6 +95,16 @@
   .box-sound{display:flex;align-items:center;gap:6px}
   .box-sound .sel{flex:1;min-width:0;padding:6px 8px;font-size:13.5px}
   .box-sound span{font-size:15px}
+  .st-sec{margin:14px 0 6px;font-size:16px;font-weight:900;color:var(--navy)}
+  .st-table{width:100%;border-collapse:collapse;font-size:14.5px}
+  .st-table th{text-align:start;font-weight:800;color:var(--muted);font-size:13px;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .st-table td{padding:8px;border-bottom:1px solid #f0ead9;vertical-align:middle}
+  .st-table td.nm{font-weight:800}
+  .dots{display:inline-flex;gap:3px;vertical-align:middle;margin-inline-start:6px}
+  .dots i{width:9px;height:9px;border-radius:50%;background:#e7dfcb}
+  .dots i.on{background:var(--ok)}
+  .chipf{border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 12px;font-weight:800;font-size:13.5px;cursor:pointer}
+  .chipf.on{background:var(--navy);border-color:var(--navy);color:#fff}
   .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
   .f{display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:14.5px}
   .f input[type=text],.f input[type=number]{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:16px;outline:none;font-weight:700}
@@ -198,6 +208,25 @@
       <p class="meta" id="lastPub"></p>
     </section>
 
+    <section class="card" id="studentsCard">
+      <h2>📋 الطلاب الذين دخلوا</h2>
+      <div id="stSignedOut">
+        <p class="lead">تظهر هنا أسماء الطلاب وشعبهم وعدد الصناديق التي فتحها كل منهم. للحفاظ على خصوصية الطلاب لا يراها إلا حسابك في Google.</p>
+        <button class="btn navy" id="stSignIn" type="button">عرض الأسماء (الدخول بحساب Google)</button>
+        <p class="meta" id="stMsg"></p>
+      </div>
+      <div id="stSignedIn" class="hidden">
+        <div class="row" style="margin-bottom:10px">
+          <label for="stRound" style="font-weight:800">الجولة:</label>
+          <select class="sel" id="stRound"></select>
+          <div class="row" id="stSecs"></div>
+        </div>
+        <p class="meta" id="stSummary" style="margin:0 0 10px"></p>
+        <div id="stList"></div>
+        <p class="meta"><span id="stWho"></span> · <button id="stSignOut" type="button" style="border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit">خروج</button></p>
+      </div>
+    </section>
+
     <section class="card">
       <h2>🎁 محتوى الصناديق</h2>
       <p class="lead">اكتب لكل صندوق عبارة، أو أضف صورة، أو كليهما. يمكنك أيضاً لصق صورة داخل خانة العبارة أو سحبها إلى الصندوق.</p>
@@ -234,6 +263,7 @@
       <h2>⚙️ الإعدادات</h2>
       <div class="grid2">
         <label class="f">العنوان في صفحة الطالب<input type="text" id="titleIn" maxlength="40"></label>
+        <label class="f">الشعب التي يختار منها الطالب (افصل بينها بفاصلة)<input type="text" id="secIn" maxlength="200" placeholder="تاسع5، تاسع6، تاسع7، تاسع8"></label>
         <label class="f">مدة القراءة قبل الانتقال (بالثواني)<input type="number" id="waitIn" min="0" max="120" step="1" inputmode="numeric"></label>
         <div class="f">طريقة فتح الصناديق
           <div class="radio">
@@ -326,6 +356,7 @@
   let state = null, base = null, dirty = false, publishing = false;
   const localImg = {};   // صور وأصوات نُشرت للتو ولم يكتمل ظهورها على الموقع بعد
   const DEFAULT_SOUND = "sounds/sparkle.mp3", DEFAULT_FINALE = "sounds/celebrate.mp3";
+  const DEFAULT_SECTIONS = ["تاسع5", "تاسع6", "تاسع7", "تاسع8"];
   let builtins = [];     // الأصوات الجاهزة من sounds/library.json
 
   /* ---------- أدوات ---------- */
@@ -463,7 +494,8 @@
       board: cfg && cfg.board, boards: clone((cfg && cfg.boards) || []), boxes,
       sound: cfg && "sound" in cfg ? String(cfg.sound || "") : DEFAULT_SOUND,
       finale: cfg && "finale" in cfg ? String(cfg.finale || "") : DEFAULT_FINALE,
-      customSounds: clone((cfg && cfg.customSounds) || [])
+      customSounds: clone((cfg && cfg.customSounds) || []),
+      sections: cfg && Array.isArray(cfg.sections) ? cfg.sections.slice() : DEFAULT_SECTIONS.slice()
     });
   }
   // يكمّل أي حقول ناقصة (مثلاً مسودة محفوظة قبل إضافة الأصوات)
@@ -472,6 +504,7 @@
     while (s.boxes.length < 10) s.boxes.push({ t: "", i: "", s: "" });
     if (!("sound" in s)) s.sound = DEFAULT_SOUND;
     if (!("finale" in s)) s.finale = DEFAULT_FINALE;
+    if (!Array.isArray(s.sections)) s.sections = DEFAULT_SECTIONS.slice();
     s.customSounds = (s.customSounds || []).filter((c) => c && c.id && c.src);
     return s;
   }
@@ -792,10 +825,13 @@
 
   function renderSettings() {
     $("titleIn").value = state.title;
+    if (document.activeElement !== $("secIn")) $("secIn").value = state.sections.join("، ");
     $("waitIn").value = state.wait;
     document.querySelectorAll("input[name=order]").forEach((r) => { r.checked = (r.value === "order") === state.order; r.parentElement.classList.toggle("on", r.checked); });
   }
   $("titleIn").addEventListener("input", () => { state.title = $("titleIn").value; changed(); });
+  $("secIn").addEventListener("input", () => { state.sections = $("secIn").value.split(/[،,؛;]+/).map((x) => x.trim()).filter(Boolean).slice(0, 20); changed(); });
+  $("secIn").addEventListener("blur", () => { $("secIn").value = state.sections.join("، "); });
   $("waitIn").addEventListener("input", () => {
     const v = Math.round(Number($("waitIn").value));
     if ($("waitIn").value !== "" && Number.isFinite(v)) { state.wait = Math.max(0, Math.min(120, v)); changed(); }
@@ -917,7 +953,7 @@
 
   /* ---------- الحالة والمسودة ---------- */
   let draftT;
-  const canon = (st) => { const c = normalizeState(clone(st)); return JSON.stringify([c.title, c.wait, c.order, c.board, c.boards, c.boxes, c.sound, c.finale, c.customSounds]); };
+  const canon = (st) => { const c = normalizeState(clone(st)); return JSON.stringify([c.title, c.wait, c.order, c.board, c.boards, c.boxes, c.sound, c.finale, c.customSounds, c.sections]); };
   function changed() {
     // إذا عادت التعديلات إلى ما هو منشور تماماً فلا توجد تعديلات
     dirty = canon(state) !== canon(fromConfig(base));
@@ -974,7 +1010,9 @@
     navigator.share({ title: (state && state.title) || "الصناديق السرية", text: "اكتب اسمك الثلاثي واكتشف ما خبّأته لك:", url: SITE }).catch(() => {});
   });
   // تقرأ صفحة الطالب هذه الدالة في وضع المعاينة
-  window.sanadeeqPreview = () => ({
+  // يقرؤها قسم «الطلاب الذين دخلوا»
+  window.sanadeeqInfo = () => ({ version: base ? base.version : 0, sections: state ? state.sections : DEFAULT_SECTIONS });
+  window.sanadeeqPreview = () => ({ sections: state.sections,
     version: "preview", title: state.title, wait: state.wait, order: state.order, board: state.board,
     boards: state.boards.map((b) => Object.assign({}, b, { src: src(b.src) })),
     sound: state.sound ? src(state.sound) : "", finale: state.finale ? src(state.finale) : "",
@@ -1027,7 +1065,7 @@
       });
       const cfg = {
         version, title: (state.title || "").trim() || "الصناديق السرية", wait: state.wait, order: state.order,
-        board: state.board, boards, sound: mapS(state.sound), finale: mapS(state.finale), customSounds,
+        board: state.board, boards, sound: mapS(state.sound), finale: mapS(state.finale), customSounds, sections: state.sections.slice(),
         secret: b64Utf8(JSON.stringify(boxes))
       };
       files.push({ path: "config.json", b64: b64Utf8(JSON.stringify(cfg, null, 1)) });
@@ -1043,6 +1081,7 @@
       dirty = false; LS.del(K_DRAFT);
       renderAll();
       setStatus("ok", "✓ تم النشر — يصل للطلاب خلال دقيقة تقريباً…");
+      window.dispatchEvent(new Event("sanadeeq:published"));
       watchLive(version);
     } catch (e) {
       setStatus("err", "✗ " + explain(e));
@@ -1077,6 +1116,111 @@
 
   boot();
 })();
+</script>
+<script type="module">
+// قسم «الطلاب الذين دخلوا»: يقرأ سجلات الطلاب من Firebase (مشروع sanadeeq) — لا يراها إلا حساب المعلم
+const FB = {
+  apiKey: "AIzaSyBPvtM0azYwbAgPfBu8WROT5SJgB7Uk9go", authDomain: "sanadeeq-eba14.firebaseapp.com", projectId: "sanadeeq-eba14",
+  storageBucket: "sanadeeq-eba14.firebasestorage.app", messagingSenderId: "363973827345", appId: "1:363973827345:web:2fa5e49111ca4d247b8ab0"
+};
+const TEACHER = "abdullah2006adigm@gmail.com";
+const CDN = "https://www.gstatic.com/firebasejs/10.12.2/";
+const $ = (id) => document.getElementById(id);
+let A, F, auth, db, unsub = null, visits = [], round = "", secFilter = "";
+const fmt = new Intl.DateTimeFormat("ar", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" });
+const fmtShort = new Intl.DateTimeFormat("ar", { weekday: "short", hour: "numeric", minute: "2-digit" });
+const toDate = (t) => (t && t.toDate ? t.toDate() : null);
+try {
+  const [{ initializeApp }, a, f] = await Promise.all([import(CDN + "firebase-app.js"), import(CDN + "firebase-auth.js"), import(CDN + "firebase-firestore.js")]);
+  A = a; F = f;
+  const app = initializeApp(FB); auth = A.getAuth(app); db = F.getFirestore(app);
+  A.getRedirectResult(auth).catch(() => {});
+  A.onAuthStateChanged(auth, (u) => {
+    const ok = u && !u.isAnonymous && (u.email || "").toLowerCase() === TEACHER;
+    $("stSignedOut").classList.toggle("hidden", !!ok);
+    $("stSignedIn").classList.toggle("hidden", !ok);
+    if (u && !u.isAnonymous && !ok) { $("stMsg").textContent = `الحساب ${u.email} لا يملك صلاحية عرض الأسماء. ادخل بحساب ${TEACHER}.`; A.signOut(auth); }
+    if (ok) { $("stWho").textContent = "داخل بحساب " + u.email; listen(); }
+    else if (unsub) { unsub(); unsub = null; }
+  });
+} catch (e) { $("stMsg").textContent = "تعذّر الاتصال بقاعدة البيانات. تحقق من الإنترنت ثم أعد تحميل الصفحة."; }
+
+$("stSignIn").addEventListener("click", async () => {
+  if (!auth) return;
+  const p = new A.GoogleAuthProvider(); p.setCustomParameters({ login_hint: TEACHER, prompt: "select_account" });
+  try { await A.signInWithPopup(auth, p); }
+  catch (e) {
+    if (e && /popup-blocked|operation-not-supported|popup-closed-by-browser/.test(e.code || "")) A.signInWithRedirect(auth, p);
+    else if (e && e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") $("stMsg").textContent = "تعذّر الدخول: " + (e.code || e.message);
+  }
+});
+$("stSignOut").addEventListener("click", () => auth && A.signOut(auth));
+
+function listen() {
+  if (unsub) return;
+  $("stSummary").textContent = "جارٍ التحميل…";
+  unsub = F.onSnapshot(F.collection(db, "visits"), (snap) => {
+    visits = snap.docs.map((d) => d.data());
+    render();
+  }, (e) => { $("stSummary").textContent = "تعذّرت قراءة السجلات (" + (e.code || e.message) + ")."; });
+}
+function rounds() {
+  const info = window.sanadeeqInfo ? window.sanadeeqInfo() : { version: 0 };
+  const set = new Set(visits.map((v) => String(v.version)));
+  if (info.version) set.add(String(info.version));
+  return { current: String(info.version || ""), list: [...set].sort((a, b) => Number(b) - Number(a)) };
+}
+function render() {
+  const { current, list } = rounds();
+  if (!round || !list.includes(round)) round = current || list[0] || "";
+  const sel = $("stRound"); sel.innerHTML = "";
+  list.forEach((v) => {
+    const d = Number(v) > 1e12 ? fmt.format(new Date(Number(v))) : v;
+    sel.add(new Option((v === current ? "الحالية — نُشرت " : "نُشرت ") + d, v));
+  });
+  sel.value = round;
+  // دمج سجلات الطالب نفسه (الاسم والشعبة) إن دخل من أكثر من جهاز
+  const merged = new Map();
+  visits.filter((v) => String(v.version) === round).forEach((v) => {
+    const k = (v.section || "") + "|" + (v.name || "").trim();
+    const m = merged.get(k) || { name: (v.name || "").trim(), section: v.section || "", opened: new Set(), first: null, last: null };
+    (v.opened || []).forEach((i) => m.opened.add(i));
+    const f = toDate(v.first), l = toDate(v.last);
+    if (f && (!m.first || f < m.first)) m.first = f;
+    if (l && (!m.last || l > m.last)) m.last = l;
+    merged.set(k, m);
+  });
+  const rows = [...merged.values()];
+  const secs = [...new Set((window.sanadeeqInfo ? window.sanadeeqInfo().sections : []).concat(rows.map((r) => r.section)))].filter((x) => x !== undefined);
+  const chips = $("stSecs"); chips.innerHTML = "";
+  [["", "الكل"]].concat(secs.map((x) => [x, x || "بلا شعبة"])).forEach(([val, label]) => {
+    const n = val === "" ? rows.length : rows.filter((r) => r.section === val).length;
+    const b = document.createElement("button"); b.type = "button"; b.className = "chipf" + (secFilter === val ? " on" : "");
+    b.textContent = `${label} (${n})`; b.addEventListener("click", () => { secFilter = val; render(); }); chips.appendChild(b);
+  });
+  const shown = rows.filter((r) => secFilter === "" || r.section === secFilter);
+  const done = shown.filter((r) => r.opened.size >= 10).length;
+  const n = shown.length, who = n === 1 ? "طالب واحد" : n === 2 ? "طالبان" : n <= 10 ? `${n} طلاب` : `${n} طالباً`;
+  $("stSummary").textContent = n ? `دخل ${who}، وفتح الصناديق العشرة كلها ${done} منهم.` : "لم يدخل أحد في هذه الجولة بعد.";
+  const wrap = $("stList"); wrap.innerHTML = "";
+  const bySec = new Map();
+  shown.sort((a, b) => a.name.localeCompare(b.name, "ar")).forEach((r) => { if (!bySec.has(r.section)) bySec.set(r.section, []); bySec.get(r.section).push(r); });
+  [...bySec.keys()].sort((a, b) => a.localeCompare(b, "ar", { numeric: true })).forEach((sec) => {
+    const h = document.createElement("div"); h.className = "st-sec"; h.textContent = (sec || "بلا شعبة") + ` (${bySec.get(sec).length})`; wrap.appendChild(h);
+    const t = document.createElement("table"); t.className = "st-table";
+    t.innerHTML = "<thead><tr><th>الاسم</th><th>الصناديق</th><th>أول دخول</th><th>آخر نشاط</th></tr></thead><tbody></tbody>";
+    bySec.get(sec).forEach((r) => {
+      const tr = document.createElement("tr");
+      const dots = Array.from({ length: 10 }, (_, i) => `<i class="${r.opened.has(i) ? "on" : ""}"></i>`).join("");
+      tr.innerHTML = `<td class="nm"></td><td>${r.opened.size} من 10<span class="dots">${dots}</span></td><td>${r.first ? fmtShort.format(r.first) : "—"}</td><td>${r.last ? fmtShort.format(r.last) : "—"}</td>`;
+      tr.querySelector(".nm").textContent = r.name;
+      t.tBodies[0].appendChild(tr);
+    });
+    wrap.appendChild(t);
+  });
+}
+$("stRound").addEventListener("change", () => { round = $("stRound").value; render(); });
+window.addEventListener("sanadeeq:published", () => { round = ""; if (unsub) render(); });
 </script>
 </body>
 </html>
