@@ -1,5 +1,5 @@
 {
- "version": 1795366970922,
+ "version": 1795383633500,
  "title": "الصناديق السرية",
  "wait": 10,
  "order": false,
@@ -341,5 +341,14 @@
    ]
   }
  ],
- "secret": "W3sidCI6IiIsImkiOiIifSx7InQiOiLYqCIsImkiOiIifSx7InQiOiLYqCIsImkiOiIifSx7InQiOiIiLCJpIjoiIn0seyJ0IjoiIiwiaSI6IiJ9LHsidCI6IiIsImkiOiIifSx7InQiOiLYsyIsImkiOiIifSx7InQiOiIiLCJpIjoiIn0seyJ0IjoiIiwiaSI6IiJ9LHsidCI6IiIsImkiOiIifV0="
+ "sound": "sounds/pop.mp3",
+ "finale": "sounds/applause.mp3",
+ "customSounds": [],
+ "sections": [
+  "تاسع5",
+  "تاسع6",
+  "تاسع7",
+  "تاسع8"
+ ],
+ "secret": "W3sidCI6IiIsImkiOiIiLCJzIjoiIiwidiI6IiJ9LHsidCI6IiIsImkiOiIiLCJzIjoiIiwidiI6IiJ9LHsidCI6IiIsImkiOiIiLCJzIjoiIiwidiI6IiJ9LHsidCI6IiIsImkiOiIiLCJzIjoiIiwidiI6IiJ9LHsidCI6IiIsImkiOiIiLCJzIjoiIiwidiI6IiJ9LHsidCI6ImQiLCJpIjoiIiwicyI6IiIsInYiOiIifSx7InQiOiIiLCJpIjoiIiwicyI6IiIsInYiOiIifSx7InQiOiIiLCJpIjoiIiwicyI6IiIsInYiOiIifSx7InQiOiIiLCJpIjoiIiwicyI6IiIsInYiOiIifSx7InQiOiIiLCJpIjoiIiwicyI6IiIsInYiOiIifV0="
 }
