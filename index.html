@@ -353,6 +353,14 @@
       $("boardImg").src = asset(board.src); // تحميل مسبق أثناء كتابة الاسم
       if (PREVIEW) { $("n1").value = "طالب"; $("n2").value = "تجريبي"; $("n3").value = "للمعاينة"; }
       renderSections();
+      // اسم الطالب وشعبته من المرة السابقة على هذا الجهاز (إلا إذا حذفه)
+      const saved = PREVIEW ? null : store.get(K_ME, null);
+      if (saved && Array.isArray(saved.name)) {
+        saved.name.forEach((v, i) => { if (fields[i]) fields[i].value = v || ""; });
+        const btn = [...$("secList").children].find((b) => b.textContent === saved.section);
+        if (btn) btn.click();
+        hint("أهلاً بعودتك! تأكد من اسمك ثم اضغط «اكتشف الأسرار»", true);
+      }
       // تنزيل الأصوات المستخدمة فقط أثناء كتابة الطالب اسمه
       const used = new Set(boxes.map((b, i) => boxSound(i)).concat(finaleSound()).filter(Boolean));
       used.forEach(Sound.prefetch);
@@ -395,6 +403,7 @@
   fields.forEach((el, idx) => {
     el.addEventListener("input", () => {
       el.classList.remove("bad", "ok");
+      if (!PREVIEW && fields.every((f) => !f.value.trim())) { try { localStorage.removeItem(K_ME); } catch (e) {} }
       let v = normalize(el.value);
       if (HAS_NOT_AR.test(v)) { v = v.replace(RE_NOT_AR, ""); hint("اكتب اسمك بالحروف العربية فقط"); }
       else hint("");
@@ -435,6 +444,7 @@
     return !msg;
   }
 
+  const K_ME = "sanadeeq:me";
   /* ---------- الشعبة ---------- */
   let section = "";
   const sectionList = () => (Array.isArray(cfg.sections) ? cfg.sections : ["تاسع5", "تاسع6", "تاسع7", "تاسع8"]).map(String).filter(Boolean);
@@ -467,6 +477,7 @@
     student = fields.map((f) => normalize(f.value).trim());
     progressKey = `sanadeeq:${cfg.version}:${student.join(" ")}`;
     seen = (store.get(progressKey, []) || []).filter((n) => Number.isInteger(n) && n >= 0 && n < 10);
+    if (!PREVIEW) store.set(K_ME, { name: student, section });
     $("helloName").textContent = student[0];
     if (!PREVIEW && window.SanadeeqLog) window.SanadeeqLog.start({ name: student.join(" "), section, version: cfg.version, opened: seen.slice() });
     buildBoard();
