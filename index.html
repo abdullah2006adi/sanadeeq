@@ -146,6 +146,7 @@
   .secret.empty{font-family:'Tajawal',sans-serif;font-weight:700;font-size:20px;color:#8a7650}
   .secret a{display:inline-block;margin:6px 0;padding:4px 14px;border-radius:99px;font-family:'Tajawal',sans-serif;font-size:17px;font-weight:800;
     color:#fff;background:#24317a;text-decoration:none}
+  .replay{display:inline-block;margin-top:12px;border:0;border-radius:99px;padding:8px 18px;font:800 16px 'Tajawal',sans-serif;color:#fff;background:#24317a;cursor:pointer}
   .secret-img{display:none;max-width:100%;max-height:46vh;margin:14px auto 0;border-radius:16px;box-shadow:0 10px 28px #0003;cursor:zoom-in}
   .foot{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:20px}
   .ring{position:relative;width:62px;height:62px;flex:none}
@@ -153,7 +154,8 @@
   .ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:23px;color:#24317a}
   .wait-note{min-height:1.4em;margin-top:10px;font-size:14.5px;font-weight:700;color:#8a7650}
   .skip{margin-top:6px;border:0;background:none;color:#24317a;text-decoration:underline;cursor:pointer;font-size:14px}
-  .trophy{font-size:64px;line-height:1.1}
+  .big-trophy{position:relative;font-size:min(62vw,62vh);line-height:1;cursor:pointer;filter:drop-shadow(0 20px 60px #f5c451aa);animation:trophy .9s cubic-bezier(.2,1.5,.35,1)}
+  @keyframes trophy{from{transform:scale(.2) rotate(-12deg);opacity:0}}
   .lightbox{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:#000e;padding:12px;cursor:zoom-out}
   .lightbox.on{display:flex}
   .lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
@@ -214,6 +216,7 @@
     <p class="to" id="to"></p>
     <div class="secret" id="secretText"></div>
     <img class="secret-img" id="secretImg" alt="صورة الصندوق">
+    <button class="replay hidden" id="replay" type="button">🔊 أعد الاستماع</button>
     <div class="foot">
       <div class="ring" id="ring">
         <svg width="62" height="62" viewBox="0 0 62 62"><circle cx="31" cy="31" r="26" stroke="#eadcb5" stroke-width="6" fill="none"/>
@@ -229,11 +232,7 @@
 
 <div class="modal" id="doneModal" role="dialog" aria-modal="true">
   <div class="rays"></div>
-  <div class="card">
-    <div class="trophy">🏆</div>
-    <p class="secret" id="doneText"></p>
-    <div class="foot"><button class="btn" id="doneBtn" type="button">رائع!</button></div>
-  </div>
+  <div class="big-trophy" id="doneBtn" role="button" aria-label="إغلاق">🏆</div>
 </div>
 
 <div class="lightbox" id="lightbox"><img id="lightboxImg" alt=""></div>
@@ -306,15 +305,17 @@
       try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0); } catch (e) {}
       Object.keys(bytes).forEach(decode);
     }
+    // يعيد مقبضاً يمكن به إيقاف الصوت تدريجياً
     function play(src) {
-      if (muted || !src) return;
+      if (muted || !src) return null;
       const b = buffers[src];
       if (ctx && b && b !== "loading") {
         if (ctx.state !== "running") ctx.resume().catch(() => {});
-        const s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0);
-        return;
+        const s = ctx.createBufferSource(), g = ctx.createGain();
+        s.buffer = b; s.connect(g); g.connect(ctx.destination); s.start(0);
+        return { stop(fade) { try { const t = ctx.currentTime; g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + (fade || 0.05)); s.stop(t + (fade || 0.05) + 0.02); } catch (e) {} } };
       }
-      try { const a = new Audio(asset(src)); a.play().catch(() => {}); } catch (e) {}   // احتياط إن لم يكتمل التحميل
+      try { const a = new Audio(asset(src)); a.play().catch(() => {}); return { stop() { try { a.pause(); } catch (e) {} } }; } catch (e) { return null; }   // احتياط إن لم يكتمل التحميل
     }
     return {
       prefetch, unlock, play,
@@ -362,7 +363,7 @@
         hint("أهلاً بعودتك!", true);
       }
       // تنزيل الأصوات المستخدمة فقط أثناء كتابة الطالب اسمه
-      const used = new Set(boxes.map((b, i) => boxSound(i)).concat(finaleSound()).filter(Boolean));
+      const used = new Set(boxes.map((b, i) => boxSound(i)).concat(finaleSound(), boxes.map((b) => b.v || "")).filter(Boolean));
       used.forEach(Sound.prefetch);
       $("muteBtn").classList.toggle("hidden", used.size === 0);
       renderMute();
@@ -520,9 +521,7 @@
     $("progTxt").textContent = `فتحت ${n} من ${total}`;
     $("progBar").style.width = (n / total) * 100 + "%";
     const all = n >= total;
-    $("doneMsg").classList.toggle("hidden", !all);
     if (all) {
-      $("doneMsg").textContent = `🎉 أحسنت يا ${student[0]}! اكتشفت كل الأسرار`;
       $("sub").textContent = "يمكنك فتح أي صندوق مرة أخرى لتقرأه";
     } else if (cfg.order) {
       $("sub").textContent = n === 0 ? "افتح الصناديق بالترتيب، ابدأ بالصندوق رقم 1" : `أحسنت! الآن افتح الصندوق رقم ${nextInOrder() + 1}`;
@@ -554,7 +553,7 @@
       return;
     }
     busy = true;
-    Sound.play(boxSound(i));
+    openSound = Sound.play(boxSound(i));
     s.classList.remove("live", "shake");
     s.classList.add("opening");
     setTimeout(() => { s.classList.remove("opening"); showSecret(i); }, 700);
@@ -574,12 +573,21 @@
     if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
   }
 
-  let timer = null, remaining = 0, total = 0, lastTick = 0, current = -1;
+  let timer = null, remaining = 0, total = 0, lastTick = 0, current = -1, openSound = null, voice = null;
+  function playVoice() {
+    const v = String((boxes[current] || {}).v || "");
+    if (voice) voice.stop(0.1);
+    voice = null;
+    if (!v) return;
+    if (openSound) { openSound.stop(0.35); openSound = null; }   // يخفت صوت الفتح ليُسمع التعليق بوضوح
+    voice = Sound.play(v);
+  }
   function showSecret(i) {
     current = i;
     const box = boxes[i] || {};
     const text = String(box.t || "").trim(), img = String(box.i || "");
-    const empty = !text && !img;
+    const hasVoice = !!box.v;
+    const empty = !text && !img && !hasVoice;
     const already = seen.includes(i);
     $("ribbon").textContent = "الصندوق " + (i + 1);
     $("to").textContent = "";
@@ -589,11 +597,13 @@
     if (empty) t.textContent = "هذا الصندوق فارغ هذه المرة… جرّب صندوقاً آخر!";
     else renderText(t, text);
     t.classList.toggle("hidden", !empty && !text);
+    $("replay").classList.toggle("hidden", !hasVoice || Sound.muted);
     const im = $("secretImg");
     if (img) { im.src = asset(img); im.style.display = "block"; } else { im.removeAttribute("src"); im.style.display = "none"; }
     $("secretModal").classList.add("on");
     $("secretModal").querySelector(".card").scrollTop = 0;
     burst(false);
+    playVoice();
 
     const wait = already || empty ? 0 : Math.max(0, Math.min(600, Number(cfg.wait ?? 10) || 0));
     clearTimeout(timer);
@@ -636,18 +646,19 @@
   function closeSecret() {
     if ($("closeBtn").disabled) return;
     $("secretModal").classList.remove("on");
+    if (voice) { voice.stop(0.25); voice = null; }
     busy = false;
     refresh();
     if (seen.length >= spots.length && !closeSecret.celebrated) {
       closeSecret.celebrated = true;
-      $("doneText").textContent = `أحسنت يا ${student[0]}!\nفتحت الصناديق كلها واكتشفت الأسرار`;
       $("doneModal").classList.add("on");
       Sound.play(finaleSound());
       burst(true);
     }
   }
   $("closeBtn").addEventListener("click", closeSecret);
-  $("doneBtn").addEventListener("click", () => $("doneModal").classList.remove("on"));
+  $("replay").addEventListener("click", () => { Sound.unlock(); playVoice(); });
+  $("doneModal").addEventListener("click", () => $("doneModal").classList.remove("on"));
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     if ($("lightbox").classList.contains("on")) $("lightbox").classList.remove("on");
