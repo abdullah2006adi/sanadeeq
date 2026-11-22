@@ -1,0 +1,16 @@
+{
+  "id": "./admin.html",
+  "name": "لوحة الصناديق السرية",
+  "short_name": "لوحة الصناديق",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./admin.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f1e6",
+  "theme_color": "#1b2660",
+  "icons": [
+    { "src": "icon-teacher-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-teacher-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
