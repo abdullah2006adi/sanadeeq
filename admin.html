@@ -182,11 +182,6 @@
   <section class="card" id="loadingCard"><p class="lead" id="loadingMsg">جارٍ التحميل…</p><button class="btn hidden" id="retryBtn" type="button">إعادة المحاولة</button></section>
 
   <div id="editor" class="hidden">
-    <div class="notice hidden" id="restoreBar">
-      <span id="restoreTxt">لديك تعديلات لم تُنشر، محفوظة على هذا الجهاز.</span>
-      <button class="btn sm navy" id="restoreYes" type="button">استعادتها</button>
-      <button class="btn sm" id="restoreNo" type="button">تجاهلها</button>
-    </div>
 
     <section class="card">
       <h2>🔗 رابط الطلاب</h2>
@@ -250,6 +245,7 @@
 
 <footer class="dock hidden" id="dock">
   <span class="status" id="status"></span>
+  <button class="btn danger hidden" id="discardBtn" type="button">إلغاء التعديلات</button>
   <button class="btn" id="previewBtn" type="button">👁️ معاينة</button>
   <button class="btn primary" id="publishBtn" type="button">🚀 نشر للطلاب</button>
 </footer>
@@ -918,9 +914,16 @@
 
   /* ---------- الحالة والمسودة ---------- */
   let draftT;
-  function changed() { dirty = true; setStatus(); clearTimeout(draftT); draftT = setTimeout(saveDraft, 500); }
+  const canon = (st) => { const c = normalizeState(clone(st)); return JSON.stringify([c.title, c.wait, c.order, c.board, c.boards, c.boxes, c.sound, c.finale, c.customSounds]); };
+  function changed() {
+    // إذا عادت التعديلات إلى ما هو منشور تماماً فلا توجد تعديلات
+    dirty = canon(state) !== canon(fromConfig(base));
+    setStatus(); clearTimeout(draftT);
+    if (dirty) draftT = setTimeout(saveDraft, 500); else LS.del(K_DRAFT);
+  }
   function setStatus(kind, msg) {
     const s = $("status");
+    $("discardBtn").classList.toggle("hidden", !dirty || publishing);
     if (msg) { s.textContent = msg; s.className = "status " + (kind || ""); return; }
     s.textContent = dirty ? "● تعديلات لم تُنشر بعد" : "✓ ما تراه هنا هو المنشور للطلاب";
     s.className = "status " + (dirty ? "dirty" : "ok");
@@ -938,18 +941,21 @@
     s.boxes.forEach((b) => { if (isData(b.s)) b.s = ""; });
     LS.set(K_DRAFT, JSON.stringify({ base: base.version, state: s, partial: true }));
   }
+  // تعديلات لم تُنشر محفوظة على هذا الجهاز: تعود وحدها دون سؤال
   function offerDraft() {
     let d = null;
     try { d = JSON.parse(LS.get(K_DRAFT) || "null"); } catch (e) {}
-    if (!d || d.base !== base.version || !d.state || JSON.stringify(d.state) === JSON.stringify(state)) { LS.del(K_DRAFT); return; }
-    $("restoreTxt").textContent = d.partial
-      ? "لديك تعديلات لم تُنشر محفوظة على هذا الجهاز (العبارات والإعدادات؛ الصور والأصوات الجديدة لم تُحفظ)."
-      : "لديك تعديلات لم تُنشر محفوظة على هذا الجهاز.";
-    show("restoreBar");
-    $("restoreYes").onclick = () => { state = normalizeState(d.state); hide("restoreBar"); renderAll(); changed(); toast("استُعيدت التعديلات"); };
-    $("restoreNo").onclick = () => { LS.del(K_DRAFT); hide("restoreBar"); };
+    if (!d || d.base !== base.version || !d.state) { LS.del(K_DRAFT); return; }
+    const restored = normalizeState(d.state);
+    if (canon(restored) === canon(state)) { LS.del(K_DRAFT); return; }
+    state = restored; renderAll(); changed();
+    toast(d.partial ? "عادت تعديلاتك التي لم تُنشر (عدا الصور والأصوات الجديدة)" : "عادت تعديلاتك التي لم تُنشر");
   }
-  window.addEventListener("beforeunload", (e) => { if (dirty && !publishing) { saveDraft(); e.preventDefault(); e.returnValue = ""; } });
+  $("discardBtn").addEventListener("click", async () => {
+    if (!(await ask("إلغاء كل التعديلات التي لم تُنشر والعودة إلى ما يراه الطلاب الآن؟", "ألغِ التعديلات"))) return;
+    state = fromConfig(base); LS.del(K_DRAFT); renderAll(); changed(); toast("أُلغيت التعديلات");
+  });
+  window.addEventListener("pagehide", () => { if (dirty && !publishing) saveDraft(); });
 
   /* ---------- الرابط والمعاينة ---------- */
   $("copyLink").addEventListener("click", async () => {
