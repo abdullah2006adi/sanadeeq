@@ -228,6 +228,10 @@
         </div>
         <p class="meta" id="stSummary" style="margin:0 0 10px"></p>
         <div id="stList"></div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn sm danger" id="stDelRound" type="button">🗑 مسح هذه الجولة</button>
+          <button class="btn sm danger" id="stDelOld" type="button">🗑 مسح الجولات السابقة</button>
+        </div>
         <p class="meta"><span id="stWho"></span> · <button id="stSignOut" type="button" style="border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit">خروج</button></p>
       </div>
     </section>
@@ -1116,6 +1120,7 @@
     navigator.share({ title: (state && state.title) || "الصناديق السرية", text: "اكتب اسمك الثلاثي واكتشف ما خبّأته لك:", url: SITE }).catch(() => {});
   });
   // تقرأ صفحة الطالب هذه الدالة في وضع المعاينة
+  window.sanadeeqAsk = ask; window.sanadeeqToast = toast;
   // يقرؤها قسم «الطلاب الذين دخلوا»
   window.sanadeeqInfo = () => ({ version: base ? base.version : 0, sections: state ? state.sections : DEFAULT_SECTIONS });
   window.sanadeeqPreview = () => ({ sections: state.sections,
@@ -1267,7 +1272,7 @@ function listen() {
   if (unsub) return;
   $("stSummary").textContent = "جارٍ التحميل…";
   unsub = F.onSnapshot(F.collection(db, "visits"), (snap) => {
-    visits = snap.docs.map((d) => d.data());
+    visits = snap.docs.map((d) => Object.assign({ __ref: d.ref }, d.data()));
     render();
   }, (e) => { $("stSummary").textContent = "تعذّرت قراءة السجلات (" + (e.code || e.message) + ")."; });
 }
@@ -1327,6 +1332,29 @@ function render() {
   });
 }
 $("stRound").addEventListener("change", () => { round = $("stRound").value; render(); });
+
+// مسح الجولات: تُحذف السجلات من قاعدة البيانات نهائياً بعد التأكيد
+async function removeVisits(list, what) {
+  if (!list.length) { window.sanadeeqToast("لا توجد سجلات لمسحها"); return; }
+  const n = list.length;
+  if (!(await window.sanadeeqAsk(`سيُمسح ${what} (${n} ${n === 1 ? "سجل" : n === 2 ? "سجلان" : n <= 10 ? "سجلات" : "سجلاً"}) نهائياً ولا يمكن استرجاعه. هل تريد المتابعة؟`, "امسح نهائياً", "مسح الجولات"))) return;
+  try {
+    for (let i = 0; i < list.length; i += 400) {
+      const batch = F.writeBatch(db);
+      list.slice(i, i + 400).forEach((v) => batch.delete(v.__ref));
+      await batch.commit();
+    }
+    window.sanadeeqToast("تم المسح ✓");
+  } catch (e) { window.sanadeeqToast("تعذّر المسح: " + (e.code || e.message)); }
+}
+$("stDelRound").addEventListener("click", () => {
+  const { current } = rounds();
+  removeVisits(visits.filter((v) => String(v.version) === round), round === current ? "سجل الجولة الحالية" : "سجل هذه الجولة");
+});
+$("stDelOld").addEventListener("click", () => {
+  const { current } = rounds();
+  removeVisits(visits.filter((v) => String(v.version) !== current), "سجل كل الجولات السابقة (وتبقى الحالية)");
+});
 window.addEventListener("sanadeeq:published", () => { round = ""; if (unsub) render(); });
 </script>
 </body>
