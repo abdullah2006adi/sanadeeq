@@ -1,0 +1,98 @@
+[
+ {
+  "id": "sparkle",
+  "name": "بريق سحري",
+  "src": "sounds/sparkle.mp3",
+  "dur": 1.97
+ },
+ {
+  "id": "chime",
+  "name": "جرس الكنز",
+  "src": "sounds/chime.mp3",
+  "dur": 2.38
+ },
+ {
+  "id": "coins",
+  "name": "عملات ذهبية",
+  "src": "sounds/coins.mp3",
+  "dur": 1.22
+ },
+ {
+  "id": "chest",
+  "name": "صندوق خشبي يُفتح",
+  "src": "sounds/chest.mp3",
+  "dur": 2.23
+ },
+ {
+  "id": "lock",
+  "name": "قفل ومفتاح",
+  "src": "sounds/lock.mp3",
+  "dur": 1.77
+ },
+ {
+  "id": "drumroll",
+  "name": "طبول ثم مفاجأة",
+  "src": "sounds/drumroll.mp3",
+  "dur": 2.83
+ },
+ {
+  "id": "tada",
+  "name": "تا-دا!",
+  "src": "sounds/tada.mp3",
+  "dur": 2.38
+ },
+ {
+  "id": "harp",
+  "name": "قيثارة",
+  "src": "sounds/harp.mp3",
+  "dur": 1.63
+ },
+ {
+  "id": "musicbox",
+  "name": "صندوق موسيقى",
+  "src": "sounds/musicbox.mp3",
+  "dur": 2.95
+ },
+ {
+  "id": "pop",
+  "name": "فقاعة",
+  "src": "sounds/pop.mp3",
+  "dur": 0.6
+ },
+ {
+  "id": "powerup",
+  "name": "مكافأة الألعاب",
+  "src": "sounds/powerup.mp3",
+  "dur": 1.06
+ },
+ {
+  "id": "whoosh",
+  "name": "نسمة سحرية",
+  "src": "sounds/whoosh.mp3",
+  "dur": 2.07
+ },
+ {
+  "id": "ding",
+  "name": "إجابة صحيحة",
+  "src": "sounds/ding.mp3",
+  "dur": 1.3
+ },
+ {
+  "id": "bell",
+  "name": "جرس هادئ",
+  "src": "sounds/bell.mp3",
+  "dur": 3.02
+ },
+ {
+  "id": "applause",
+  "name": "تصفيق",
+  "src": "sounds/applause.mp3",
+  "dur": 3.54
+ },
+ {
+  "id": "celebrate",
+  "name": "احتفال",
+  "src": "sounds/celebrate.mp3",
+  "dur": 3.07
+ }
+]

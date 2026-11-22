@@ -73,6 +73,11 @@
   .top{width:var(--bw);display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-bottom:8px}
   .hello{font-size:clamp(18px,4.6vw,26px);font-weight:800}
   .hello b{color:var(--gold-2)}
+  .top-end{display:flex;align-items:center;gap:8px}
+  .mute{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid #ffffff2e;background:#ffffff14;
+    font-size:19px;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s}
+  .mute:hover{background:#ffffff26}
+  .mute.off{opacity:.7}
   .pill{display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:99px;background:#ffffff14;border:1px solid #ffffff26;font-weight:800;font-size:15px}
   .bar{width:110px;height:10px;border-radius:9px;background:#ffffff26;overflow:hidden}
   .bar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#f5b52e,#ffe08a);transition:width .7s cubic-bezier(.2,.8,.2,1)}
@@ -178,7 +183,10 @@
 <section class="screen" id="playScreen">
   <div class="top" id="top">
     <div class="hello">أهلاً يا <b id="helloName"></b> 👋</div>
-    <div class="pill"><span id="progTxt">فتحت 0 من 10</span><div class="bar"><i id="progBar"></i></div></div>
+    <div class="top-end">
+      <div class="pill"><span id="progTxt">فتحت 0 من 10</span><div class="bar"><i id="progBar"></i></div></div>
+      <button class="mute hidden" id="muteBtn" type="button" aria-label="كتم الصوت" title="كتم الصوت">🔊</button>
+    </div>
   </div>
   <p class="sub" id="sub"></p>
   <div class="board" id="board"><img id="boardImg" alt="الصناديق العشرة"></div>
@@ -254,6 +262,68 @@
   }
   const asset = (src) => !src ? "" : /^(data:|blob:|https?:)/.test(src) ? src : src + (src.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(cfg.version);
 
+  /* ---------- الأصوات ----------
+     cfg.sound  : صوت فتح الصناديق كلها ("" = بلا صوت). إن لم يُحدَّد فالافتراضي «بريق سحري».
+     cfg.finale : صوت التهنئة بعد فتح الصناديق كلها. الافتراضي «احتفال».
+     box.s      : "" = مثل باقي الصناديق، "none" = بلا صوت، أو مسار صوت خاص بهذا الصندوق. */
+  const Sound = (() => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let ctx = null;
+    const bytes = {}, buffers = {};
+    let muted = !!store.get("sanadeeq:muted", false);
+    function prefetch(src) {
+      if (!src || bytes[src]) return;
+      bytes[src] = fetch(asset(src)).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+    }
+    function decode(src) {
+      if (buffers[src] || !ctx) return;
+      buffers[src] = "loading";
+      bytes[src].then((ab) => {
+        if (!ab) { buffers[src] = null; return; }
+        const done = (b) => { buffers[src] = b; }, fail = () => { buffers[src] = null; };
+        try { const p = ctx.decodeAudioData(ab, done, fail); if (p && p.then) p.then(done, fail); } catch (e) { fail(); }
+      });
+    }
+    // يُستدعى عند ضغطة الطالب على «اكتشف الأسرار» لأن المتصفحات لا تسمح بالصوت قبل لمسة من المستخدم
+    function unlock() {
+      if (!AC) return;
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+      if (!ctx) { try { ctx = new AC(); } catch (e) { ctx = null; return; } }
+      if (ctx.state !== "running") ctx.resume().catch(() => {});
+      try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0); } catch (e) {}
+      Object.keys(bytes).forEach(decode);
+    }
+    function play(src) {
+      if (muted || !src) return;
+      const b = buffers[src];
+      if (ctx && b && b !== "loading") {
+        if (ctx.state !== "running") ctx.resume().catch(() => {});
+        const s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0);
+        return;
+      }
+      try { const a = new Audio(asset(src)); a.play().catch(() => {}); } catch (e) {}   // احتياط إن لم يكتمل التحميل
+    }
+    return {
+      prefetch, unlock, play,
+      get muted() { return muted; },
+      toggle() { muted = !muted; store.set("sanadeeq:muted", muted); return muted; }
+    };
+  })();
+  const defaultSound = () => (cfg && "sound" in cfg ? cfg.sound || "" : "sounds/sparkle.mp3");
+  const finaleSound = () => (cfg && "finale" in cfg ? cfg.finale || "" : "sounds/celebrate.mp3");
+  function boxSound(i) {
+    const s = (boxes[i] || {}).s;
+    return s === "none" ? "" : s || defaultSound();
+  }
+  function renderMute() {
+    const b = $("muteBtn"), m = Sound.muted;
+    b.textContent = m ? "🔇" : "🔊";
+    b.classList.toggle("off", m);
+    b.title = m ? "تشغيل الصوت" : "كتم الصوت";
+    b.setAttribute("aria-label", b.title);
+  }
+  $("muteBtn").addEventListener("click", () => { Sound.toggle(); renderMute(); if (!Sound.muted) Sound.unlock(); });
+
   async function start() {
     if (PREVIEW) { $("previewBanner").classList.remove("hidden"); document.body.style.paddingTop = "30px"; }
     try {
@@ -268,6 +338,11 @@
       $("bg").style.backgroundImage = `url("${asset(board.src)}")`;
       $("boardImg").src = asset(board.src); // تحميل مسبق أثناء كتابة الاسم
       if (PREVIEW) { $("n1").value = "طالب"; $("n2").value = "تجريبي"; $("n3").value = "للمعاينة"; }
+      // تنزيل الأصوات المستخدمة فقط أثناء كتابة الطالب اسمه
+      const used = new Set(boxes.map((b, i) => boxSound(i)).concat(finaleSound()).filter(Boolean));
+      used.forEach(Sound.prefetch);
+      $("muteBtn").classList.toggle("hidden", used.size === 0);
+      renderMute();
       show("gateScreen");
       setTimeout(() => { if (!matchMedia("(pointer:coarse)").matches) $("n1").focus(); }, 60);
     } catch (e) {
@@ -348,6 +423,7 @@
   $("gateForm").addEventListener("submit", (e) => {
     e.preventDefault();
     for (let i = 0; i < 3; i++) if (!check(i, true)) return;
+    Sound.unlock();
     student = fields.map((f) => normalize(f.value).trim());
     progressKey = `sanadeeq:${cfg.version}:${student.join(" ")}`;
     seen = (store.get(progressKey, []) || []).filter((n) => Number.isInteger(n) && n >= 0 && n < 10);
@@ -426,6 +502,7 @@
       return;
     }
     busy = true;
+    Sound.play(boxSound(i));
     s.classList.remove("live", "shake");
     s.classList.add("opening");
     setTimeout(() => { s.classList.remove("opening"); showSecret(i); }, 700);
@@ -510,6 +587,7 @@
       closeSecret.celebrated = true;
       $("doneText").textContent = `أحسنت يا ${student[0]}!\nفتحت الصناديق كلها واكتشفت الأسرار`;
       $("doneModal").classList.add("on");
+      Sound.play(finaleSound());
       burst(true);
     }
   }

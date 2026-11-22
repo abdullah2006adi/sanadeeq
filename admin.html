@@ -74,6 +74,24 @@
   .add-tile:hover{border-color:var(--gold);color:var(--ink)}
   .add-tile b{font-size:36px;line-height:1;color:var(--gold)}
 
+  .sub-h{font-size:16px;font-weight:900;color:var(--navy);margin:4px 0 8px}
+  .sounds{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:16px}
+  .snd{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px solid var(--line);border-radius:14px;background:#fffdf8;
+    cursor:pointer;font-weight:800;font-size:14.5px;user-select:none;-webkit-user-select:none;transition:border-color .15s,background .15s}
+  .snd:hover{border-color:#d6c9a6}
+  .snd:focus-visible{outline:3px solid #f5c451;outline-offset:2px}
+  .snd.selected{border-color:var(--gold);background:#fff6dd;box-shadow:0 0 0 3px #f5c45140}
+  .snd .ic{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#ffe08a;font-size:12px}
+  .snd.playing .ic{background:var(--gold);color:#3a2300}
+  .snd .nm{flex:1;min-width:0;line-height:1.35}
+  .snd .nm small{display:block;font-size:11.5px;color:var(--muted);font-weight:700}
+  .snd .ok{color:var(--ok);font-weight:900}
+  .snd .del{flex:none;border:0;background:none;color:var(--bad);font-weight:800;font-size:12.5px;cursor:pointer;padding:2px 4px}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .sel{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:14.5px;font-weight:700;max-width:100%}
+  .box-sound{display:flex;align-items:center;gap:6px}
+  .box-sound .sel{flex:1;min-width:0;padding:6px 8px;font-size:13.5px}
+  .box-sound span{font-size:15px}
   .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
   .f{display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:14.5px}
   .f input[type=text],.f input[type=number]{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:16px;outline:none;font-weight:700}
@@ -128,6 +146,9 @@
     a.light{font-size:13px;padding:5px 9px}
     .status{min-width:100%}
     .dock .btn{flex:1}
+    .sounds{grid-template-columns:1fr 1fr;gap:6px}
+    .snd{padding:8px;gap:6px;font-size:13.5px}
+    .snd .ic{width:26px;height:26px}
   }
   @media (max-width:340px){.chip{display:none}}
 </style>
@@ -189,6 +210,22 @@
       <div class="boxes" id="boxes"></div>
     </section>
 
+    <section class="card" id="soundsCard">
+      <h2>🔊 الأصوات</h2>
+      <p class="lead">اضغط على أي صوت لتسمعه ويصبح صوت فتح الصناديق كلها. ولتجعل لصندوق معيّن صوتاً مختلفاً، اختره من قائمة «الصوت» داخل ذلك الصندوق في الأعلى.</p>
+      <h3 class="sub-h">صوت فتح الصناديق</h3>
+      <div class="sounds" id="soundGrid"></div>
+      <div class="row" style="margin-bottom:14px">
+        <label for="finaleSel" style="font-weight:800">صوت التهنئة بعد فتح الصناديق العشرة:</label>
+        <select class="sel" id="finaleSel"></select>
+        <button class="btn sm" id="finalePlay" type="button" aria-label="استمع لصوت التهنئة">▶ استمع</button>
+      </div>
+      <div class="row">
+        <button class="btn sm navy" id="addSoundBtn" type="button">➕ إضافة صوت من جهازك</button>
+        <span class="meta" style="margin:0">يُقبل ملف صوتي مثل MP3 أو M4A أو WAV، ويُقصّ إلى 8 ثوانٍ إن كان أطول.</span>
+      </div>
+    </section>
+
     <section class="card">
       <h2>🖼️ صورة الصناديق</h2>
       <p class="lead">اضغط على الصورة التي تريد أن يراها الطلاب. عند إضافة صورة جديدة ستحدّد مكان كل صندوق فيها من 1 إلى 10.</p>
@@ -242,6 +279,20 @@
   </div>
 </div>
 
+<div class="modal hidden" id="sndModal" role="dialog" aria-modal="true" aria-labelledby="sndTitle">
+  <div class="sheet narrow">
+    <h3 id="sndTitle">إضافة صوت</h3>
+    <p class="lead" id="sndInfo"></p>
+    <label class="f">اسم الصوت كما سيظهر لك<input type="text" id="sndName" maxlength="30"></label>
+    <div class="sheet-foot">
+      <button class="btn" id="sndTry" type="button">▶ استمع</button>
+      <span style="flex:1"></span>
+      <button class="btn" id="sndCancel" type="button">إلغاء</button>
+      <button class="btn primary" id="sndAdd" type="button">إضافة الصوت</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal hidden" id="askModal" role="alertdialog" aria-modal="true">
   <div class="sheet narrow">
     <h3 id="askTitle">تأكيد</h3>
@@ -253,6 +304,7 @@
 <div class="modal hidden img-modal" id="imgModal"><img id="imgModalImg" alt=""></div>
 <div class="toast" id="toast" role="status"></div>
 <input type="file" id="fileIn" accept="image/*" class="hidden">
+<input type="file" id="audioIn" accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg" class="hidden">
 
 <script>
 (() => {
@@ -273,7 +325,9 @@
 
   let token = (LS.get(K_TOKEN) || "").trim();
   let state = null, base = null, dirty = false, publishing = false;
-  const localImg = {};   // صور نُشرت للتو ولم يكتمل ظهورها على الموقع بعد
+  const localImg = {};   // صور وأصوات نُشرت للتو ولم يكتمل ظهورها على الموقع بعد
+  const DEFAULT_SOUND = "sounds/sparkle.mp3", DEFAULT_FINALE = "sounds/celebrate.mp3";
+  let builtins = [];     // الأصوات الجاهزة من sounds/library.json
 
   /* ---------- أدوات ---------- */
   const isData = (s) => typeof s === "string" && s.startsWith("data:");
@@ -404,14 +458,172 @@
   function fromConfig(cfg) {
     let boxes = [];
     try { boxes = cfg && cfg.secret ? JSON.parse(utf8FromB64(cfg.secret)) : []; } catch (e) { boxes = []; }
-    boxes = boxes.slice(0, 10).map((b) => ({ t: String((b && b.t) || ""), i: String((b && b.i) || "") }));
-    while (boxes.length < 10) boxes.push({ t: "", i: "" });
     const wait = cfg && Number.isFinite(+cfg.wait) ? +cfg.wait : 10;
-    return {
+    return normalizeState({
       title: (cfg && cfg.title) || "الصناديق السرية", wait, order: !!(cfg && cfg.order),
-      board: cfg && cfg.board, boards: clone((cfg && cfg.boards) || []), boxes
-    };
+      board: cfg && cfg.board, boards: clone((cfg && cfg.boards) || []), boxes,
+      sound: cfg && "sound" in cfg ? String(cfg.sound || "") : DEFAULT_SOUND,
+      finale: cfg && "finale" in cfg ? String(cfg.finale || "") : DEFAULT_FINALE,
+      customSounds: clone((cfg && cfg.customSounds) || [])
+    });
   }
+  // يكمّل أي حقول ناقصة (مثلاً مسودة محفوظة قبل إضافة الأصوات)
+  function normalizeState(s) {
+    s.boxes = (s.boxes || []).slice(0, 10).map((b) => ({ t: String((b && b.t) || ""), i: String((b && b.i) || ""), s: String((b && b.s) || "") }));
+    while (s.boxes.length < 10) s.boxes.push({ t: "", i: "", s: "" });
+    if (!("sound" in s)) s.sound = DEFAULT_SOUND;
+    if (!("finale" in s)) s.finale = DEFAULT_FINALE;
+    s.customSounds = (s.customSounds || []).filter((c) => c && c.id && c.src);
+    return s;
+  }
+  async function loadLibrary() {
+    try {
+      const r = await fetch("sounds/library.json?t=" + Date.now(), { cache: "no-store" });
+      const list = r.ok ? await r.json() : [];
+      builtins = Array.isArray(list) ? list : [];
+    } catch (e) { builtins = []; }
+  }
+
+  /* ---------- الأصوات ---------- */
+  const allSounds = () => builtins.map((b) => ({ key: "b:" + b.id, name: b.name, src: b.src, builtin: true }))
+    .concat(state.customSounds.map((c) => ({ key: "c:" + c.id, name: c.name, src: c.src, builtin: false })));
+  const keyOfSrc = (s) => { const x = allSounds().find((o) => o.src === s); return x ? x.key : ""; };
+  const srcOfKey = (k) => { const x = allSounds().find((o) => o.key === k); return x ? x.src : ""; };
+  const nameOfSrc = (s) => { if (!s) return "بلا صوت"; const x = allSounds().find((o) => o.src === s); return x ? x.name : "صوت محذوف"; };
+  let player = null, playingEl = null;
+  function stopSound() {
+    try { if (player) player.pause(); } catch (e) {}
+    if (playingEl) playingEl.classList.remove("playing");
+    player = null; playingEl = null;
+  }
+  function playSound(path, el) {
+    stopSound();
+    if (!path) return;
+    const a = new Audio(src(path));
+    player = a;
+    if (el) { playingEl = el; el.classList.add("playing"); }
+    const done = () => { if (player === a) { if (playingEl) playingEl.classList.remove("playing"); playingEl = null; } };
+    a.addEventListener("ended", done);
+    a.play().catch(() => { done(); toast("تعذّر تشغيل الصوت على هذا المتصفح"); });
+  }
+  function fillSoundOptions(sel, head, value) {
+    sel.innerHTML = "";
+    head.forEach(([v, t]) => sel.add(new Option(t, v)));
+    const groups = [["أصوات جاهزة", allSounds().filter((s) => s.builtin)], ["أصواتك", allSounds().filter((s) => !s.builtin)]];
+    groups.forEach(([label, list]) => {
+      if (!list.length) return;
+      const g = document.createElement("optgroup"); g.label = label;
+      list.forEach((s) => g.appendChild(new Option(s.name, s.key)));
+      sel.appendChild(g);
+    });
+    sel.value = value;
+    if (sel.value !== value) sel.value = head[0][0];
+  }
+  function renderSounds() {
+    const grid = $("soundGrid");
+    stopSound();
+    grid.innerHTML = "";
+    const tiles = [{ src: "", name: "بلا صوت", none: true }].concat(allSounds());
+    tiles.forEach((s, k) => {
+      const sel = state.sound === s.src;
+      const el = document.createElement("div");
+      el.className = "snd" + (sel ? " selected" : "");
+      el.tabIndex = 0;
+      el.setAttribute("role", "button");
+      el.setAttribute("aria-pressed", sel ? "true" : "false");
+      el.innerHTML = `<span class="ic">${s.none ? "🔇" : "▶"}</span><span class="nm"></span>`;
+      el.querySelector(".nm").textContent = s.name;
+      if (!s.none && !s.builtin) { const sm = document.createElement("small"); sm.textContent = "من جهازك"; el.querySelector(".nm").appendChild(sm); }
+      if (sel) { const ok = document.createElement("span"); ok.className = "ok"; ok.textContent = "✓"; el.appendChild(ok); }
+      if (!s.none && !s.builtin) {
+        el.appendChild(button("حذف", "del", async (e) => {
+          e.stopPropagation();
+          if (await ask(`حذف الصوت «${s.name}»؟ الصناديق التي تستخدمه ستعود إلى الصوت العام.`, "احذفه")) removeCustomSound(s.src);
+        }));
+      }
+      const pick = () => {
+        if (state.sound !== s.src) { state.sound = s.src; changed(); renderSounds(); refreshBoxSounds(); }
+        if (!s.none) playSound(s.src, $("soundGrid").children[k]); else stopSound();
+      };
+      el.addEventListener("click", pick);
+      el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+      grid.appendChild(el);
+    });
+    fillSoundOptions($("finaleSel"), [["", "بلا صوت"]], state.finale ? keyOfSrc(state.finale) : "");
+  }
+  $("finaleSel").addEventListener("change", () => { const v = $("finaleSel").value; state.finale = v ? srcOfKey(v) : ""; changed(); if (state.finale) playSound(state.finale); });
+  $("finalePlay").addEventListener("click", () => { if (state.finale) playSound(state.finale); else toast("لم تختر صوتاً للتهنئة"); });
+
+  const boxEffective = (b) => (b.s === "none" ? "" : b.s || state.sound);
+  function fillBoxSound(sel, b) {
+    fillSoundOptions(sel, [["", "مثل باقي الصناديق (" + nameOfSrc(state.sound) + ")"], ["none", "بلا صوت"]],
+      b.s === "none" ? "none" : b.s ? keyOfSrc(b.s) : "");
+  }
+  function refreshBoxSounds() {
+    [...$("boxes").children].forEach((card, i) => { const sel = card.querySelector(".box-sound select"); if (sel) fillBoxSound(sel, state.boxes[i]); });
+  }
+  function removeCustomSound(s) {
+    state.customSounds = state.customSounds.filter((c) => c.src !== s);
+    if (state.sound === s) state.sound = DEFAULT_SOUND;
+    if (state.finale === s) state.finale = DEFAULT_FINALE;
+    state.boxes.forEach((b) => { if (b.s === s) b.s = ""; });
+    renderSounds(); refreshBoxSounds(); changed();
+  }
+
+  // رفع صوت من الجهاز: يُفحص، ويُحوَّل إلى WAV (أحادي 32 كيلوهرتز) إن لم يكن MP3 قصيراً، ويُقصّ إلى 8 ثوانٍ
+  const MAX_SEC = 8;
+  let pendingSound = null;
+  const readAsDataURL = (file) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+  async function toWav(buf, maxSec) {
+    const sr = 32000, dur = Math.min(buf.duration, maxSec), len = Math.max(1, Math.ceil(dur * sr));
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const oc = new OAC(1, len, sr), s = oc.createBufferSource(), g = oc.createGain();
+    s.buffer = buf; s.connect(g); g.connect(oc.destination);
+    if (buf.duration > maxSec) { g.gain.setValueAtTime(1, Math.max(0, dur - 0.3)); g.gain.linearRampToValueAtTime(0, dur); }
+    s.start(0);
+    const out = await oc.startRendering(), ch = out.getChannelData(0);
+    const dv = new DataView(new ArrayBuffer(44 + ch.length * 2));
+    const w = (o, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(o + i, str.charCodeAt(i)); };
+    w(0, "RIFF"); dv.setUint32(4, 36 + ch.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, sr, true);
+    dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, "data"); dv.setUint32(40, ch.length * 2, true);
+    for (let i = 0; i < ch.length; i++) { const v = Math.max(-1, Math.min(1, ch[i])); dv.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+    return new Uint8Array(dv.buffer);
+  }
+  async function prepareSound(file) {
+    if (file.size > 30 * 1024 * 1024) { toast("الملف كبير جداً؛ اختر مقطعاً قصيراً"); return; }
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AC(), ab = await file.arrayBuffer();
+      const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); });
+      if (ctx.close) ctx.close().catch(() => {});
+      const isMp3 = /mpeg|mp3/i.test(file.type) || /\.mp3$/i.test(file.name);
+      let data, ext, note = "";
+      if (isMp3 && file.size <= 1.5 * 1024 * 1024 && buf.duration <= MAX_SEC + 0.05) { data = await readAsDataURL(file); ext = "mp3"; data = "data:audio/mpeg;base64," + data.slice(data.indexOf(",") + 1); }
+      else { data = "data:audio/wav;base64," + bytesToB64(await toWav(buf, MAX_SEC)); ext = "wav"; if (buf.duration > MAX_SEC + 0.05) note = "، وسيُستخدم أول 8 ثوانٍ منه فقط"; }
+      pendingSound = { data, ext };
+      $("sndName").value = file.name.replace(/\.[^.]+$/, "").slice(0, 30);
+      $("sndInfo").textContent = `مدة الصوت ${Math.min(buf.duration, MAX_SEC).toFixed(1)} ثانية${note}.`;
+      show("sndModal");
+      setTimeout(() => $("sndName").select(), 30);
+    } catch (e) { toast("تعذّرت قراءة هذا الملف الصوتي. جرّب ملف MP3."); }
+  }
+  $("addSoundBtn").addEventListener("click", () => {
+    const inp = $("audioIn");
+    inp.value = "";
+    inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) prepareSound(f); };
+    inp.click();
+  });
+  $("sndTry").addEventListener("click", () => { if (pendingSound) playSound(pendingSound.data); });
+  $("sndCancel").addEventListener("click", () => { stopSound(); pendingSound = null; hide("sndModal"); });
+  $("sndAdd").addEventListener("click", () => {
+    if (!pendingSound) return;
+    const name = $("sndName").value.trim() || "صوتي";
+    state.customSounds.push({ id: "c" + Date.now().toString(36), name, src: pendingSound.data, ext: pendingSound.ext });
+    pendingSound = null; stopSound(); hide("sndModal");
+    renderSounds(); refreshBoxSounds(); changed();
+    toast(`أُضيف «${name}» إلى الأصوات؛ اختره لكل الصناديق أو لصندوق معيّن`);
+  });
   async function boot() {
     $("siteLink").value = SITE;
     if (navigator.share) show("shareLink");
@@ -419,7 +631,7 @@
     setConn("wait");
     showLoading("جارٍ تحميل الصناديق…");
     try {
-      const cfg = await readConfig();
+      const [cfg] = await Promise.all([readConfig(), loadLibrary()]);
       base = cfg || { version: 0 };
       state = fromConfig(cfg);
       dirty = false;
@@ -446,7 +658,7 @@
   $("tokenInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("saveToken").click(); });
 
   /* ---------- العرض ---------- */
-  function renderAll() { renderBoxes(); renderBoards(); renderSettings(); renderLastPub(); }
+  function renderAll() { renderBoxes(); renderSounds(); renderBoards(); renderSettings(); renderLastPub(); }
   // أعد قياس خانات العبارات بعد تحميل الخط وعند تغيّر عرض الشاشة
   const resizeAll = () => document.querySelectorAll(".box textarea").forEach(autosize);
   if (document.fonts) {
@@ -463,7 +675,22 @@
       card.className = "box";
       card.innerHTML = `<div class="box-head"><span class="box-no">${i + 1}</span><span>الصندوق ${i + 1}</span><span class="box-state"></span></div>
         <textarea rows="3" placeholder="اكتب العبارة المخبّأة في هذا الصندوق…" aria-label="عبارة الصندوق ${i + 1}"></textarea>
-        <div class="img-zone"></div>`;
+        <div class="img-zone"></div>
+        <div class="box-sound"><span aria-hidden="true">🔊</span><select class="sel" aria-label="صوت الصندوق ${i + 1}"></select></div>`;
+      const sndSel = card.querySelector(".box-sound select");
+      fillBoxSound(sndSel, b);
+      sndSel.addEventListener("change", () => {
+        const v = sndSel.value;
+        b.s = v === "none" ? "none" : v ? srcOfKey(v) : "";
+        changed();
+        const eff = boxEffective(b);
+        if (eff) playSound(eff); else stopSound();
+      });
+      card.querySelector(".box-sound").appendChild(button("▶", "btn sm", () => {
+        const eff = boxEffective(b);
+        if (eff) playSound(eff); else toast("هذا الصندوق بلا صوت");
+      }));
+      card.querySelector(".box-sound .btn").setAttribute("aria-label", "استمع لصوت الصندوق " + (i + 1));
       const ta = card.querySelector("textarea");
       ta.value = b.t;
       ta.addEventListener("input", () => { b.t = ta.value; autosize(ta); boxState(card, b); changed(); });
@@ -684,7 +911,7 @@
   });
   $("clearBtn").addEventListener("click", async () => {
     if (!(await ask("سيتم مسح العبارات والصور من الصناديق العشرة. لن يتغير شيء عند الطلاب حتى تنشر.", "امسح الكل"))) return;
-    state.boxes = state.boxes.map(() => ({ t: "", i: "" }));
+    state.boxes = state.boxes.map((b) => ({ t: "", i: "", s: b.s || "" }));
     renderBoxes(); changed();
   });
   $("imgModal").addEventListener("click", () => hide("imgModal"));
@@ -701,10 +928,14 @@
   function saveDraft() {
     if (!state || !base || !dirty) return;
     if (LS.set(K_DRAFT, JSON.stringify({ base: base.version, state }))) return;
-    const s = clone(state);   // لا تتسع الصور الجديدة: احفظ العبارات والإعدادات فقط
+    const s = clone(state);   // لا تتسع الصور والأصوات الجديدة: احفظ العبارات والإعدادات فقط
     s.boxes.forEach((b) => { if (isData(b.i)) b.i = ""; });
     s.boards = s.boards.filter((b) => !isData(b.src));
     if (!s.boards.some((b) => b.id === s.board)) s.board = base.board;
+    s.customSounds = s.customSounds.filter((c) => !isData(c.src));
+    if (isData(s.sound)) s.sound = DEFAULT_SOUND;
+    if (isData(s.finale)) s.finale = DEFAULT_FINALE;
+    s.boxes.forEach((b) => { if (isData(b.s)) b.s = ""; });
     LS.set(K_DRAFT, JSON.stringify({ base: base.version, state: s, partial: true }));
   }
   function offerDraft() {
@@ -712,10 +943,10 @@
     try { d = JSON.parse(LS.get(K_DRAFT) || "null"); } catch (e) {}
     if (!d || d.base !== base.version || !d.state || JSON.stringify(d.state) === JSON.stringify(state)) { LS.del(K_DRAFT); return; }
     $("restoreTxt").textContent = d.partial
-      ? "لديك تعديلات لم تُنشر محفوظة على هذا الجهاز (العبارات والإعدادات؛ الصور الجديدة لم تُحفظ)."
+      ? "لديك تعديلات لم تُنشر محفوظة على هذا الجهاز (العبارات والإعدادات؛ الصور والأصوات الجديدة لم تُحفظ)."
       : "لديك تعديلات لم تُنشر محفوظة على هذا الجهاز.";
     show("restoreBar");
-    $("restoreYes").onclick = () => { state = d.state; hide("restoreBar"); renderAll(); changed(); toast("استُعيدت التعديلات"); };
+    $("restoreYes").onclick = () => { state = normalizeState(d.state); hide("restoreBar"); renderAll(); changed(); toast("استُعيدت التعديلات"); };
     $("restoreNo").onclick = () => { LS.del(K_DRAFT); hide("restoreBar"); };
   }
   window.addEventListener("beforeunload", (e) => { if (dirty && !publishing) { saveDraft(); e.preventDefault(); e.returnValue = ""; } });
@@ -737,7 +968,8 @@
   window.sanadeeqPreview = () => ({
     version: "preview", title: state.title, wait: state.wait, order: state.order, board: state.board,
     boards: state.boards.map((b) => Object.assign({}, b, { src: src(b.src) })),
-    secret: state.boxes.map((b) => ({ t: b.t, i: b.i ? src(b.i) : "" }))
+    sound: state.sound ? src(state.sound) : "", finale: state.finale ? src(state.finale) : "",
+    secret: state.boxes.map((b) => ({ t: b.t, i: b.i ? src(b.i) : "", s: b.s === "none" ? "none" : b.s ? src(b.s) : "" }))
   });
   $("previewBtn").addEventListener("click", () => {
     const w = window.open("index.html?preview=1", "sanadeeq-preview");
@@ -767,23 +999,38 @@
         if (isData(b.src)) { o.src = `boards/${b.id}.jpg`; files.push({ path: o.src, b64: dataB64(b.src), data: b.src }); }
         return o;
       });
+      // الأصوات المرفوعة من الجهاز تُحفظ في sounds/custom-… وتُستبدل مراجعها بالمسار الجديد
+      const soundPath = {};
+      const customSounds = state.customSounds.map((c) => {
+        const o = { id: c.id, name: c.name, src: c.src };
+        if (isData(c.src)) {
+          o.src = `sounds/custom-${c.id}.${c.ext || (c.src.startsWith("data:audio/wav") ? "wav" : "mp3")}`;
+          files.push({ path: o.src, b64: dataB64(c.src), data: c.src });
+          soundPath[c.src] = o.src;
+        }
+        return o;
+      });
+      const mapS = (s) => (s && soundPath[s]) || s || "";
       const boxes = state.boxes.map((b, k) => {
-        const o = { t: b.t.replace(/\s+$/, ""), i: b.i || "" };
+        const o = { t: b.t.replace(/\s+$/, ""), i: b.i || "", s: b.s === "none" ? "none" : mapS(b.s) };
         if (isData(b.i)) { o.i = `media/${version}-${k + 1}.jpg`; files.push({ path: o.i, b64: dataB64(b.i), data: b.i }); }
         return o;
       });
       const cfg = {
         version, title: (state.title || "").trim() || "الصناديق السرية", wait: state.wait, order: state.order,
-        board: state.board, boards, secret: b64Utf8(JSON.stringify(boxes))
+        board: state.board, boards, sound: mapS(state.sound), finale: mapS(state.finale), customSounds,
+        secret: b64Utf8(JSON.stringify(boxes))
       };
       files.push({ path: "config.json", b64: b64Utf8(JSON.stringify(cfg, null, 1)) });
-      const keep = new Set(boards.map((b) => b.src).concat(boxes.map((b) => b.i).filter(Boolean)));
-      const stale = (tree) => tree.filter((e) => e.type === "blob" && /^(media|boards)\//.test(e.path) && !keep.has(e.path)).map((e) => e.path);
+      const keep = new Set(boards.map((b) => b.src).concat(boxes.map((b) => b.i).filter(Boolean), customSounds.map((c) => c.src)));
+      const stale = (tree) => tree.filter((e) => e.type === "blob" && /^(media\/|boards\/|sounds\/custom-)/.test(e.path) && !keep.has(e.path)).map((e) => e.path);
       await commit(files, stale, "تحديث الصناديق السرية");
       files.forEach((f) => { if (f.data) localImg[f.path] = f.data; });
       base = cfg;
       state.boards = clone(boards);
-      state.boxes = boxes.map((b) => ({ t: b.t, i: b.i }));
+      state.boxes = boxes.map((b) => ({ t: b.t, i: b.i, s: b.s }));
+      state.customSounds = clone(customSounds);
+      state.sound = cfg.sound; state.finale = cfg.finale;
       dirty = false; LS.del(K_DRAFT);
       renderAll();
       setStatus("ok", "✓ تم النشر — يصل للطلاب خلال دقيقة تقريباً…");
@@ -798,7 +1045,7 @@
   $("publishBtn").addEventListener("click", publish);
   document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) { e.preventDefault(); if (state) publish(); }
-    if (e.key === "Escape") { hide("hsModal"); hide("qfModal"); hide("imgModal"); }
+    if (e.key === "Escape") { hide("hsModal"); hide("qfModal"); hide("imgModal"); if (!$("sndModal").classList.contains("hidden")) $("sndCancel").click(); }
   });
   let watchT;
   function watchLive(v) {
