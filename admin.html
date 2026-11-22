@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>لوحة المعلم — الصناديق السرية</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f5f1e6;--card:#fff;--line:#e7dfcb;--ink:#1f1a10;--muted:#6f6650;--navy:#1b2660;--gold:#d9a233;--ok:#1f8a4c;--bad:#c0392b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Tajawal',system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:110px}
+  button,input,textarea{font:inherit;color:inherit}
+  a{color:#1f4fbf}
+  .hidden{display:none!important}
+
+  header.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 18px;background:linear-gradient(180deg,#1b2660,#141c4a);color:#fff8e6;box-shadow:0 4px 18px #0002}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand img{width:40px;height:40px}
+  .brand h1{font-size:20px;font-weight:900;line-height:1.2}
+  .brand small{display:block;color:#f5c451;font-weight:700;font-size:13px}
+  .top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .chip{padding:4px 12px;border-radius:99px;font-size:13px;font-weight:800;background:#ffffff1f;white-space:nowrap}
+  .chip.ok{background:#1f8a4c55;color:#d6ffe4}
+  a.light{color:#fff8e6;text-decoration:none;font-weight:700;font-size:14px;padding:6px 12px;border-radius:10px;border:1px solid #ffffff38;white-space:nowrap}
+
+  main{max-width:1180px;margin:0 auto;padding:18px 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px #0000000a}
+  .card h2{font-size:19px;font-weight:900;color:var(--navy);margin-bottom:4px}
+  .lead{color:var(--muted);font-size:14.5px;line-height:1.65;margin-bottom:14px}
+  .meta{margin-top:10px;font-size:14px;color:var(--muted);line-height:1.6}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:12px;
+    padding:9px 14px;font-weight:800;font-size:15px;cursor:pointer;transition:background .15s,transform .1s;white-space:nowrap}
+  .btn:hover{background:#faf6ea}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,#ffd878,#f0ad2a);border-color:#d39420;color:#3a2300}
+  .btn.navy{background:var(--navy);border-color:var(--navy);color:#fff}
+  .btn.danger{color:var(--bad)}
+  .btn.wa{background:#25d366;border-color:#1fb357;color:#fff}
+  .btn[disabled]{opacity:.55;cursor:not-allowed}
+  .btn.sm{padding:6px 10px;font-size:13.5px;border-radius:10px}
+  .link-box{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .link-box input{flex:1 1 260px;min-width:0;direction:ltr;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fbf8f0;font-weight:700;font-size:15px}
+
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .boxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .box{display:flex;flex-direction:column;gap:8px;padding:12px;border:1.5px solid var(--line);border-radius:16px;background:#fffdf8;transition:border-color .2s,box-shadow .2s}
+  .box.drag{border-color:var(--gold);box-shadow:0 0 0 4px #f5c45144}
+  .box-head{display:flex;align-items:center;gap:8px;font-weight:800}
+  .box-no{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--navy);color:#ffe08a;font-weight:900}
+  .box-state{margin-inline-start:auto;font-size:12.5px;font-weight:800;color:#b26a00}
+  .box-state.full{color:var(--ok)}
+  .box textarea{width:100%;min-height:84px;resize:vertical;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:16px;line-height:1.6;outline:none}
+  .box textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px #f5c45133}
+  .img-zone{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .img-zone img{width:76px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;background:#eee}
+
+  .boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .board-tile{display:flex;flex-direction:column;border:2px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+  .board-tile.selected{border-color:var(--gold);box-shadow:0 0 0 4px #f5c45140}
+  .thumb{position:relative;cursor:pointer;background:#0b1030;min-height:60px}
+  .thumb img{display:block;width:100%;height:auto}
+  .thumb .r{position:absolute;display:grid;place-items:center;border:1.5px solid #ffe08acc;border-radius:6px;font-size:11px;font-weight:900;color:#ffe08a;text-shadow:0 1px 2px #000}
+  .tile-foot{display:flex;align-items:center;gap:6px;padding:8px;flex-wrap:wrap}
+  .tag{font-size:12.5px;font-weight:800;color:var(--ok);background:#1f8a4c14;padding:4px 10px;border-radius:99px}
+  .add-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:160px;border:2px dashed #d6c9a6;border-radius:16px;
+    background:#fffdf8;color:var(--muted);font-weight:800;cursor:pointer}
+  .add-tile:hover{border-color:var(--gold);color:var(--ink)}
+  .add-tile b{font-size:36px;line-height:1;color:var(--gold)}
+
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+  .f{display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:14.5px}
+  .f input[type=text],.f input[type=number]{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:16px;outline:none;font-weight:700}
+  .f input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #f5c45133}
+  .radio{display:flex;gap:8px;flex-wrap:wrap}
+  .radio label{display:flex;align-items:center;gap:6px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-weight:700;font-size:14.5px}
+  .radio input{accent-color:var(--navy)}
+  .radio label.on{border-color:var(--navy);background:#1b26600d}
+
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:12px max(18px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));
+    background:#ffffffee;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--line);box-shadow:0 -6px 18px #0000000f}
+  .status{flex:1;min-width:200px;font-weight:800;font-size:14.5px;color:var(--muted)}
+  .status.dirty{color:#b26a00}.status.ok{color:var(--ok)}.status.err{color:var(--bad)}
+  .notice{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;border-radius:14px;background:#fff6dd;border:1px solid #f0d58a;font-weight:700}
+  .notice span{flex:1;min-width:200px}
+
+  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:14px;background:#0b1030b8}
+  .sheet{width:min(1100px,100%);max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow:auto;background:#fff;border-radius:20px;padding:18px;box-shadow:0 30px 80px #0006}
+  .sheet.narrow{width:min(560px,100%)}
+  .sheet h3{font-size:19px;font-weight:900;color:var(--navy);margin-bottom:6px}
+  .hs-msg{margin:6px 0 10px;text-align:center;font-weight:800;color:var(--navy);min-height:1.5em}
+  .hs-wrap{display:flex;justify-content:center}
+  .hs-stage{position:relative;display:inline-block;max-width:100%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+  .hs-stage img{display:block;max-width:100%;max-height:calc(100vh - 300px);max-height:calc(100dvh - 300px);pointer-events:none;border-radius:10px}
+  .hs-rect{position:absolute;display:grid;place-items:center;border:2.5px solid #ffd76a;background:#ffd76a26;border-radius:8px;
+    color:#fff;font-weight:900;font-size:18px;text-shadow:0 1px 3px #000;pointer-events:none}
+  .hs-rect.target{border-color:#4fd1ff;background:#4fd1ff2e}
+  .hs-rect.temp{border-style:dashed;border-color:#4fd1ff}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .chip-n{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);background:#fff;font-weight:900;cursor:pointer}
+  .chip-n.done{background:var(--ok);border-color:var(--ok);color:#fff}
+  .chip-n.target{outline:3px solid #4fd1ff;outline-offset:2px}
+  .sheet-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .sheet-foot .grow{flex:1;display:flex;align-items:center;gap:8px;font-weight:700;min-width:220px}
+  .qf{width:100%;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:16px;line-height:1.8;outline:none;resize:vertical}
+  .steps{margin:12px 22px 4px 0;line-height:2;font-size:14.5px}
+  .img-modal img{max-width:100%;max-height:calc(100dvh - 40px);border-radius:12px;background:#fff}
+  .toast{position:fixed;left:50%;bottom:100px;z-index:90;max-width:calc(100% - 28px);padding:10px 18px;border-radius:12px;text-align:center;
+    background:#1f1a10;color:#fff;font-weight:700;opacity:0;pointer-events:none;transform:translate(-50%,20px);transition:.25s}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .spin{display:inline-block;width:16px;height:16px;border:3px solid #3a230055;border-top-color:#3a2300;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (max-width:600px){
+    header.top{padding:8px 12px}
+    .brand img{width:34px;height:34px}
+    .brand h1{font-size:17px;white-space:nowrap}
+    .brand small{display:none}
+    .top-actions{flex-wrap:nowrap;gap:6px}
+    .chip{font-size:12px;padding:4px 9px}
+    .chip .long{display:none}
+    a.light{font-size:13px;padding:5px 9px}
+    .status{min-width:100%}
+    .dock .btn{flex:1}
+  }
+  @media (max-width:340px){.chip{display:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="icon.svg" alt=""><div><h1>لوحة المعلم</h1><small>الصناديق السرية</small></div></div>
+  <div class="top-actions">
+    <span class="chip" id="conn">…</span>
+    <a class="light" href="./" target="_blank" rel="noopener">صفحة الطلاب ↗</a>
+  </div>
+</header>
+
+<main>
+  <section class="card hidden" id="connectCard">
+    <h2>🔑 اربط هذا الجهاز بحسابك في GitHub</h2>
+    <p class="lead">خطوة واحدة لكل جهاز. إذا كانت صفحة «مواقعي» مربوطة على هذا الجهاز فلن تحتاجها، لأن اللوحة تستخدم المفتاح نفسه.</p>
+    <div class="link-box">
+      <input id="tokenInput" type="text" dir="ltr" autocomplete="off" spellcheck="false" placeholder="github_pat_…" style="-webkit-text-security:disc">
+      <button class="btn navy" id="saveToken" type="button">ربط الجهاز</button>
+    </div>
+    <p class="meta" id="connectMsg"></p>
+    <ol class="steps">
+      <li>افتح <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">صفحة إنشاء المفتاح في GitHub</a>.</li>
+      <li>في <b>Repository access</b> اختر <b>All repositories</b>.</li>
+      <li>في <b>Permissions</b> اختر <b>Contents</b> ثم <b>Read and write</b>.</li>
+      <li>اضغط <b>Generate token</b>، وانسخ المفتاح والصقه هنا.</li>
+    </ol>
+  </section>
+
+  <section class="card" id="loadingCard"><p class="lead" id="loadingMsg">جارٍ التحميل…</p><button class="btn hidden" id="retryBtn" type="button">إعادة المحاولة</button></section>
+
+  <div id="editor" class="hidden">
+    <div class="notice hidden" id="restoreBar">
+      <span id="restoreTxt">لديك تعديلات لم تُنشر، محفوظة على هذا الجهاز.</span>
+      <button class="btn sm navy" id="restoreYes" type="button">استعادتها</button>
+      <button class="btn sm" id="restoreNo" type="button">تجاهلها</button>
+    </div>
+
+    <section class="card">
+      <h2>🔗 رابط الطلاب</h2>
+      <p class="lead">أرسل هذا الرابط نفسه كل مرة؛ لا يتغير، وكل ما تنشره من هنا يظهر فيه.</p>
+      <div class="link-box">
+        <input id="siteLink" readonly aria-label="رابط الطلاب">
+        <button class="btn" id="copyLink" type="button">نسخ</button>
+        <button class="btn wa" id="waLink" type="button">واتساب</button>
+        <button class="btn hidden" id="shareLink" type="button">مشاركة…</button>
+      </div>
+      <p class="meta" id="lastPub"></p>
+    </section>
+
+    <section class="card">
+      <h2>🎁 محتوى الصناديق</h2>
+      <p class="lead">اكتب لكل صندوق عبارة، أو أضف صورة، أو كليهما. يمكنك أيضاً لصق صورة داخل خانة العبارة أو سحبها إلى الصندوق.</p>
+      <div class="tools">
+        <button class="btn sm" id="quickBtn" type="button">⚡ إدخال سريع للعبارات</button>
+        <button class="btn sm danger" id="clearBtn" type="button">تفريغ كل الصناديق</button>
+      </div>
+      <div class="boxes" id="boxes"></div>
+    </section>
+
+    <section class="card">
+      <h2>🖼️ صورة الصناديق</h2>
+      <p class="lead">اضغط على الصورة التي تريد أن يراها الطلاب. عند إضافة صورة جديدة ستحدّد مكان كل صندوق فيها من 1 إلى 10.</p>
+      <div class="boards" id="boards"></div>
+    </section>
+
+    <section class="card">
+      <h2>⚙️ الإعدادات</h2>
+      <div class="grid2">
+        <label class="f">العنوان في صفحة الطالب<input type="text" id="titleIn" maxlength="40"></label>
+        <label class="f">مدة القراءة قبل الانتقال (بالثواني)<input type="number" id="waitIn" min="0" max="120" step="1" inputmode="numeric"></label>
+        <div class="f">طريقة فتح الصناديق
+          <div class="radio">
+            <label><input type="radio" name="order" value="free"> حرّ: يختار الطالب أي صندوق</label>
+            <label><input type="radio" name="order" value="order"> بالترتيب: من 1 إلى 10</label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="dock hidden" id="dock">
+  <span class="status" id="status"></span>
+  <button class="btn" id="previewBtn" type="button">👁️ معاينة</button>
+  <button class="btn primary" id="publishBtn" type="button">🚀 نشر للطلاب</button>
+</footer>
+
+<div class="modal hidden" id="hsModal" role="dialog" aria-modal="true" aria-labelledby="hsTitle">
+  <div class="sheet">
+    <h3 id="hsTitle">تحديد أماكن الصناديق</h3>
+    <p class="hs-msg" id="hsMsg"></p>
+    <div class="hs-wrap"><div class="hs-stage" id="hsStage"><img id="hsImg" alt=""></div></div>
+    <div class="chips" id="hsChips"></div>
+    <div class="sheet-foot">
+      <label class="grow"><input type="checkbox" id="hsNumbered"> الأرقام من 1 إلى 10 مرسومة على الصورة (إذا لم تكن مرسومة ستضيفها الصفحة)</label>
+      <button class="btn" id="hsClear" type="button">مسح الكل</button>
+      <button class="btn" id="hsCancel" type="button">إلغاء</button>
+      <button class="btn primary" id="hsSave" type="button">حفظ الأماكن</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="qfModal" role="dialog" aria-modal="true">
+  <div class="sheet narrow">
+    <h3>⚡ إدخال سريع للعبارات</h3>
+    <p class="lead">اكتب العبارات أو الصقها، كل عبارة في سطر: السطر الأول للصندوق 1، والثاني للصندوق 2، وهكذا. الصور لا تتغير.</p>
+    <textarea class="qf" id="qfText" rows="11"></textarea>
+    <p class="meta" id="qfCount"></p>
+    <div class="sheet-foot"><button class="btn" id="qfCancel" type="button">إلغاء</button><button class="btn primary" id="qfApply" type="button">توزيع على الصناديق</button></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="askModal" role="alertdialog" aria-modal="true">
+  <div class="sheet narrow">
+    <h3 id="askTitle">تأكيد</h3>
+    <p class="lead" id="askText"></p>
+    <div class="sheet-foot"><button class="btn" id="askNo" type="button">إلغاء</button><button class="btn primary" id="askYes" type="button">نعم</button></div>
+  </div>
+</div>
+
+<div class="modal hidden img-modal" id="imgModal"><img id="imgModalImg" alt=""></div>
+<div class="toast" id="toast" role="status"></div>
+<input type="file" id="fileIn" accept="image/*" class="hidden">
+
+<script>
+(() => {
+  "use strict";
+  const OWNER = "abdullah2006adi", REPO = "sanadeeq", BRANCH = "main";
+  const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+  const SITE = `https://${OWNER}.github.io/${REPO}/`;
+  const K_TOKEN = "mawaqi-token";            // المفتاح المشترك مع «مواقعي» وبقية مواقعك
+  const K_DRAFT = "sanadeeq-admin-draft";
+  const $ = (id) => document.getElementById(id);
+  const show = (id) => $(id).classList.remove("hidden");
+  const hide = (id) => $(id).classList.add("hidden");
+  const LS = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  let token = (LS.get(K_TOKEN) || "").trim();
+  let state = null, base = null, dirty = false, publishing = false;
+  const localImg = {};   // صور نُشرت للتو ولم يكتمل ظهورها على الموقع بعد
+
+  /* ---------- أدوات ---------- */
+  const isData = (s) => typeof s === "string" && s.startsWith("data:");
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  function bytesToB64(bytes) { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
+  const b64Utf8 = (str) => bytesToB64(enc.encode(str));
+  function utf8FromB64(b64) { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return dec.decode(u); }
+  const dataB64 = (d) => d.slice(d.indexOf(",") + 1);
+  function src(path) {
+    if (!path) return "";
+    if (isData(path) || /^https?:/.test(path)) return path;
+    if (localImg[path]) return localImg[path];
+    return path + "?v=" + encodeURIComponent((base && base.version) || "");
+  }
+  function setImg(img, path) {
+    img.onerror = null;
+    img.src = src(path);
+    if (path && !isData(path) && !/^https?:/.test(path) && !localImg[path]) {
+      img.onerror = () => { img.onerror = null; img.src = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}`; };
+    }
+  }
+  function button(label, cls, fn) { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = label; b.addEventListener("click", fn); return b; }
+  function autosize(ta) { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight + 2, 340) + "px"; }
+  let toastT;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2800); }
+  function ask(text, yes, title) {
+    return new Promise((resolve) => {
+      $("askTitle").textContent = title || "تأكيد";
+      $("askText").textContent = text;
+      $("askYes").textContent = yes || "نعم";
+      show("askModal");
+      const done = (v) => { hide("askModal"); $("askYes").onclick = $("askNo").onclick = null; resolve(v); };
+      $("askYes").onclick = () => done(true);
+      $("askNo").onclick = () => done(false);
+      setTimeout(() => $("askYes").focus(), 30);
+    });
+  }
+  function pickFile(cb) {
+    const inp = $("fileIn");
+    inp.value = "";
+    inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) cb(f); };
+    inp.click();
+  }
+  function compress(file, maxSide, quality) {
+    return new Promise((resolve, reject) => {
+      if (!file || (file.type && !file.type.startsWith("image/"))) return reject(new Error("not image"));
+      const url = URL.createObjectURL(file), img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth * s)), h = Math.max(1, Math.round(img.naturalHeight * s));
+        const c = document.createElement("canvas"); c.width = w; c.height = h;
+        const x = c.getContext("2d");
+        x.fillStyle = "#ffffff"; x.fillRect(0, 0, w, h);
+        x.imageSmoothingQuality = "high";
+        x.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode")); };
+      img.src = url;
+    });
+  }
+
+  /* ---------- GitHub ---------- */
+  async function gh(path, opt) {
+    const o = opt || {};
+    let r;
+    try {
+      r = await fetch(API + path, {
+        method: o.method || "GET", cache: "no-store",
+        headers: Object.assign({ Authorization: "Bearer " + token, Accept: o.raw ? "application/vnd.github.raw+json" : "application/vnd.github+json" },
+                               o.body ? { "Content-Type": "application/json" } : {}),
+        body: o.body ? JSON.stringify(o.body) : undefined
+      });
+    } catch (e) { const err = new Error("network"); err.status = 0; throw err; }
+    if (!r.ok) { const err = new Error("http " + r.status); err.status = r.status; try { err.body = await r.json(); } catch (e) {} throw err; }
+    if (o.raw) return r.text();
+    return r.status === 204 ? null : r.json();
+  }
+  function explain(e) {
+    if (!e || !e.status) return "تعذّر الاتصال بـ GitHub. تحقّق من الإنترنت ثم أعد المحاولة.";
+    if (e.status === 401) return "المفتاح غير صالح أو انتهت صلاحيته. اربط الجهاز بمفتاح جديد.";
+    if (e.status === 403 || e.status === 404) return "المفتاح لا يملك صلاحية الكتابة في مستودع sanadeeq. تأكد أنه يشمل All repositories وصلاحية Contents: Read and write.";
+    if (e.status === 409 || e.status === 422) return "حدث تعارض مع تعديل نُشر للتو. أعد المحاولة.";
+    return "حدث خطأ (" + e.status + "). أعد المحاولة.";
+  }
+  async function readConfig() {
+    try { return JSON.parse(await gh("/contents/config.json?ref=" + BRANCH, { raw: true })); }
+    catch (e) { if (e.status === 404) return null; throw e; }
+  }
+  // نشر كل الملفات في دفعة واحدة (commit واحد)
+  async function commit(files, staleFn, message) {
+    for (let attempt = 0; ; attempt++) {
+      const ref = await gh(`/git/ref/heads/${BRANCH}`);
+      const head = await gh(`/git/commits/${ref.object.sha}`);
+      const tree = await gh(`/git/trees/${head.tree.sha}?recursive=1`);
+      const entries = [];
+      for (const f of files) {
+        if (!f.sha) f.sha = (await gh("/git/blobs", { method: "POST", body: { content: f.b64, encoding: "base64" } })).sha;
+        entries.push({ path: f.path, mode: "100644", type: "blob", sha: f.sha });
+      }
+      staleFn(tree.tree || []).forEach((p) => entries.push({ path: p, mode: "100644", type: "blob", sha: null }));
+      const newTree = await gh("/git/trees", { method: "POST", body: { base_tree: head.tree.sha, tree: entries } });
+      const c = await gh("/git/commits", { method: "POST", body: { message, tree: newTree.sha, parents: [ref.object.sha] } });
+      try { await gh(`/git/refs/heads/${BRANCH}`, { method: "PATCH", body: { sha: c.sha } }); return c.sha; }
+      catch (e) { if (attempt < 2 && (e.status === 409 || e.status === 422)) continue; throw e; }
+    }
+  }
+
+  /* ---------- البداية ---------- */
+  function setConn(kind) {
+    const c = $("conn");
+    c.className = "chip" + (kind === "ok" ? " ok" : "");
+    c.innerHTML = kind === "ok" ? 'متصل<span class="long"> بـ GitHub</span> ✓' : kind === "wait" ? "جارٍ الاتصال…" : "غير متصل";
+  }
+  function showLoading(msg, retry) {
+    hide("editor"); hide("dock"); hide("connectCard"); show("loadingCard");
+    $("loadingMsg").textContent = msg;
+    $("retryBtn").classList.toggle("hidden", !retry);
+  }
+  function showConnect(msg) {
+    setConn("off");
+    hide("editor"); hide("dock"); hide("loadingCard"); show("connectCard");
+    $("connectMsg").textContent = msg || "";
+    $("tokenInput").value = "";
+  }
+  function fromConfig(cfg) {
+    let boxes = [];
+    try { boxes = cfg && cfg.secret ? JSON.parse(utf8FromB64(cfg.secret)) : []; } catch (e) { boxes = []; }
+    boxes = boxes.slice(0, 10).map((b) => ({ t: String((b && b.t) || ""), i: String((b && b.i) || "") }));
+    while (boxes.length < 10) boxes.push({ t: "", i: "" });
+    const wait = cfg && Number.isFinite(+cfg.wait) ? +cfg.wait : 10;
+    return {
+      title: (cfg && cfg.title) || "الصناديق السرية", wait, order: !!(cfg && cfg.order),
+      board: cfg && cfg.board, boards: clone((cfg && cfg.boards) || []), boxes
+    };
+  }
+  async function boot() {
+    $("siteLink").value = SITE;
+    if (navigator.share) show("shareLink");
+    if (!token) return showConnect();
+    setConn("wait");
+    showLoading("جارٍ تحميل الصناديق…");
+    try {
+      const cfg = await readConfig();
+      base = cfg || { version: 0 };
+      state = fromConfig(cfg);
+      dirty = false;
+      setConn("ok");
+      hide("loadingCard"); hide("connectCard"); show("editor"); show("dock");
+      renderAll();
+      setStatus();
+      offerDraft();
+    } catch (e) {
+      if (e.status === 401) return showConnect(explain(e));
+      setConn("off");
+      showLoading(explain(e), true);
+    }
+  }
+  $("retryBtn").addEventListener("click", boot);
+  $("saveToken").addEventListener("click", async () => {
+    const t = $("tokenInput").value.trim();
+    if (!t) { $("connectMsg").textContent = "الصق المفتاح أولاً."; return; }
+    $("connectMsg").textContent = "جارٍ التحقق…";
+    const old = token; token = t;
+    try { await gh(""); LS.set(K_TOKEN, t); boot(); }
+    catch (e) { token = old; $("connectMsg").textContent = explain(e); }
+  });
+  $("tokenInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("saveToken").click(); });
+
+  /* ---------- العرض ---------- */
+  function renderAll() { renderBoxes(); renderBoards(); renderSettings(); renderLastPub(); }
+  // أعد قياس خانات العبارات بعد تحميل الخط وعند تغيّر عرض الشاشة
+  const resizeAll = () => document.querySelectorAll(".box textarea").forEach(autosize);
+  if (document.fonts) {
+    if (document.fonts.ready) document.fonts.ready.then(resizeAll);
+    if (document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", resizeAll);
+  }
+  window.addEventListener("resize", () => { clearTimeout(resizeAll.t); resizeAll.t = setTimeout(resizeAll, 150); });
+
+  function renderBoxes() {
+    const wrap = $("boxes");
+    wrap.innerHTML = "";
+    state.boxes.forEach((b, i) => {
+      const card = document.createElement("div");
+      card.className = "box";
+      card.innerHTML = `<div class="box-head"><span class="box-no">${i + 1}</span><span>الصندوق ${i + 1}</span><span class="box-state"></span></div>
+        <textarea rows="3" placeholder="اكتب العبارة المخبّأة في هذا الصندوق…" aria-label="عبارة الصندوق ${i + 1}"></textarea>
+        <div class="img-zone"></div>`;
+      const ta = card.querySelector("textarea");
+      ta.value = b.t;
+      ta.addEventListener("input", () => { b.t = ta.value; autosize(ta); boxState(card, b); changed(); });
+      ta.addEventListener("paste", (e) => {
+        const f = [...((e.clipboardData && e.clipboardData.files) || [])].find((x) => x.type.startsWith("image/"));
+        if (f) { e.preventDefault(); setBoxImage(i, f); }
+      });
+      card.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); card.classList.add("drag"); } });
+      card.addEventListener("dragleave", () => card.classList.remove("drag"));
+      card.addEventListener("drop", (e) => {
+        card.classList.remove("drag");
+        const f = [...e.dataTransfer.files].find((x) => x.type.startsWith("image/"));
+        if (f) { e.preventDefault(); setBoxImage(i, f); }
+      });
+      wrap.appendChild(card);
+      autosize(ta);
+      renderImgZone(card, i);
+      boxState(card, b);
+    });
+  }
+  function boxState(card, b) {
+    const s = card.querySelector(".box-state"), t = b.t.trim();
+    s.textContent = t && b.i ? "عبارة + صورة" : b.i ? "صورة" : t ? "عبارة" : "فارغ";
+    s.classList.toggle("full", !!(t || b.i));
+  }
+  function renderImgZone(card, i) {
+    const z = card.querySelector(".img-zone"), b = state.boxes[i];
+    z.innerHTML = "";
+    if (b.i) {
+      const img = document.createElement("img");
+      img.alt = "صورة الصندوق " + (i + 1);
+      setImg(img, b.i);
+      img.addEventListener("click", () => { $("imgModalImg").src = img.src; show("imgModal"); });
+      z.append(img,
+        button("تغيير", "btn sm", () => pickFile((f) => setBoxImage(i, f))),
+        button("إزالة الصورة", "btn sm danger", () => { b.i = ""; renderImgZone(card, i); boxState(card, b); changed(); }));
+    } else {
+      z.append(button("🖼️ إضافة صورة", "btn sm", () => pickFile((f) => setBoxImage(i, f))));
+    }
+  }
+  async function setBoxImage(i, file) {
+    try {
+      state.boxes[i].i = await compress(file, 1400, 0.85);
+      const card = $("boxes").children[i];
+      renderImgZone(card, i); boxState(card, state.boxes[i]); changed();
+    } catch (e) { toast("تعذّرت قراءة الصورة. جرّب صورة بصيغة JPG أو PNG."); }
+  }
+
+  function renderBoards() {
+    const wrap = $("boards");
+    wrap.innerHTML = "";
+    state.boards.forEach((bd) => {
+      const sel = bd.id === state.board;
+      const tile = document.createElement("div");
+      tile.className = "board-tile" + (sel ? " selected" : "");
+      const th = document.createElement("div");
+      th.className = "thumb";
+      th.title = "اختيار هذه الصورة";
+      const img = document.createElement("img");
+      img.alt = "";
+      setImg(img, bd.src);
+      th.appendChild(img);
+      (bd.rects || []).forEach((r, k) => {
+        const d = document.createElement("div");
+        d.className = "r";
+        d.style.cssText = `left:${r[0]}%;top:${r[1]}%;width:${r[2]}%;height:${r[3]}%`;
+        d.textContent = k + 1;
+        th.appendChild(d);
+      });
+      th.addEventListener("click", () => selectBoard(bd.id));
+      const foot = document.createElement("div");
+      foot.className = "tile-foot";
+      if (sel) { const tg = document.createElement("span"); tg.className = "tag"; tg.textContent = "✓ يراها الطلاب"; foot.appendChild(tg); }
+      else foot.appendChild(button("استخدمها", "btn sm navy", () => selectBoard(bd.id)));
+      foot.appendChild(button("ضبط الأماكن", "btn sm", () => openHotspots(bd, false)));
+      if (!sel) foot.appendChild(button("حذف", "btn sm danger", async () => {
+        if (!(await ask("هل تريد حذف هذه الصورة من قائمة الصور؟ ستُحذف من الموقع عند النشر.", "احذفها"))) return;
+        state.boards = state.boards.filter((x) => x !== bd);
+        renderBoards(); changed();
+      }));
+      tile.append(th, foot);
+      wrap.appendChild(tile);
+    });
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "add-tile";
+    add.innerHTML = "<b>+</b>إضافة صورة صناديق جديدة";
+    add.addEventListener("click", () => pickFile(async (f) => {
+      try { openHotspots({ id: "b" + Date.now().toString(36), src: await compress(f, 1800, 0.86), numbered: true, rects: [] }, true); }
+      catch (e) { toast("تعذّرت قراءة الصورة. جرّب صورة بصيغة JPG أو PNG."); }
+    }));
+    wrap.appendChild(add);
+  }
+  function selectBoard(id) {
+    if (state.board === id) return;
+    state.board = id;
+    renderBoards(); changed();
+    toast("ستظهر هذه الصورة للطلاب بعد النشر");
+  }
+
+  function renderSettings() {
+    $("titleIn").value = state.title;
+    $("waitIn").value = state.wait;
+    document.querySelectorAll("input[name=order]").forEach((r) => { r.checked = (r.value === "order") === state.order; r.parentElement.classList.toggle("on", r.checked); });
+  }
+  $("titleIn").addEventListener("input", () => { state.title = $("titleIn").value; changed(); });
+  $("waitIn").addEventListener("input", () => {
+    const v = Math.round(Number($("waitIn").value));
+    if ($("waitIn").value !== "" && Number.isFinite(v)) { state.wait = Math.max(0, Math.min(120, v)); changed(); }
+  });
+  $("waitIn").addEventListener("blur", () => { $("waitIn").value = state.wait; });
+  document.querySelectorAll("input[name=order]").forEach((r) => r.addEventListener("change", () => {
+    if (r.checked) state.order = r.value === "order";
+    renderSettings(); changed();
+  }));
+  function renderLastPub() {
+    const v = Number(base && base.version);
+    $("lastPub").textContent = v > 1e12
+      ? "آخر نشر: " + new Intl.DateTimeFormat("ar", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" }).format(new Date(v))
+      : "";
+  }
+
+  /* ---------- تحديد أماكن الصناديق ---------- */
+  const hs = { board: null, isNew: false, rects: [], target: 0, drag: null };
+  function openHotspots(bd, isNew) {
+    hs.board = bd; hs.isNew = isNew;
+    hs.rects = Array.from({ length: 10 }, (_, k) => (bd.rects && bd.rects[k] ? bd.rects[k].slice() : null));
+    hs.target = hs.rects.findIndex((r) => !r);
+    $("hsNumbered").checked = bd.numbered !== false;
+    setImg($("hsImg"), bd.src);
+    show("hsModal");
+    renderHs();
+  }
+  function renderHs() {
+    const st = $("hsStage");
+    st.querySelectorAll(".hs-rect:not(.temp)").forEach((e) => e.remove());
+    hs.rects.forEach((r, k) => {
+      if (!r) return;
+      const d = document.createElement("div");
+      d.className = "hs-rect" + (k === hs.target ? " target" : "");
+      d.style.cssText = `left:${r[0]}%;top:${r[1]}%;width:${r[2]}%;height:${r[3]}%`;
+      d.textContent = k + 1;
+      st.appendChild(d);
+    });
+    const chips = $("hsChips");
+    chips.innerHTML = "";
+    hs.rects.forEach((r, k) => {
+      const c = button(String(k + 1), "chip-n" + (r ? " done" : "") + (k === hs.target ? " target" : ""), () => { hs.target = k; renderHs(); });
+      c.title = r ? "إعادة رسم الصندوق " + (k + 1) : "رسم الصندوق " + (k + 1);
+      chips.appendChild(c);
+    });
+    const count = hs.rects.filter(Boolean).length;
+    $("hsMsg").textContent = hs.target >= 0
+      ? `اسحب بالفأرة أو بإصبعك مستطيلاً حول الصندوق رقم ${hs.target + 1} (${count} من 10)`
+      : "حُدّدت الصناديق العشرة ✓ — لتعديل صندوق اضغط رقمه في الأسفل ثم ارسمه من جديد";
+    $("hsSave").disabled = count < 10;
+  }
+  function stagePoint(e) {
+    const r = $("hsStage").getBoundingClientRect();
+    return { x: Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)), y: Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100)) };
+  }
+  function drawTemp(p) {
+    const d = hs.drag;
+    d.tmp.style.cssText = `left:${Math.min(d.x0, p.x)}%;top:${Math.min(d.y0, p.y)}%;width:${Math.abs(p.x - d.x0)}%;height:${Math.abs(p.y - d.y0)}%`;
+  }
+  $("hsStage").addEventListener("pointerdown", (e) => {
+    if (hs.target < 0 || (e.pointerType === "mouse" && e.button !== 0)) return;
+    e.preventDefault();
+    try { $("hsStage").setPointerCapture(e.pointerId); } catch (err) {}
+    const p = stagePoint(e), tmp = document.createElement("div");
+    tmp.className = "hs-rect temp";
+    tmp.textContent = hs.target + 1;
+    $("hsStage").appendChild(tmp);
+    hs.drag = { x0: p.x, y0: p.y, tmp };
+    drawTemp(p);
+  });
+  $("hsStage").addEventListener("pointermove", (e) => { if (hs.drag) drawTemp(stagePoint(e)); });
+  $("hsStage").addEventListener("pointerup", (e) => {
+    if (!hs.drag) return;
+    const p = stagePoint(e), d = hs.drag;
+    hs.drag = null; d.tmp.remove();
+    const x = Math.min(d.x0, p.x), y = Math.min(d.y0, p.y), w = Math.abs(p.x - d.x0), h = Math.abs(p.y - d.y0);
+    if (w < 2 || h < 2) return;
+    const r1 = (v) => Math.round(v * 10) / 10;
+    hs.rects[hs.target] = [r1(x), r1(y), r1(w), r1(h)];
+    let next = -1;
+    for (let k = 1; k <= 10; k++) { const j = (hs.target + k) % 10; if (!hs.rects[j]) { next = j; break; } }
+    hs.target = next;
+    renderHs();
+  });
+  $("hsStage").addEventListener("pointercancel", () => { if (hs.drag) { hs.drag.tmp.remove(); hs.drag = null; } });
+  $("hsClear").addEventListener("click", () => { hs.rects = hs.rects.map(() => null); hs.target = 0; renderHs(); });
+  $("hsCancel").addEventListener("click", () => hide("hsModal"));
+  $("hsSave").addEventListener("click", () => {
+    if (hs.rects.some((r) => !r)) return;
+    hs.board.rects = hs.rects.map((r) => r.slice());
+    hs.board.numbered = $("hsNumbered").checked;
+    if (hs.isNew) { state.boards.push(hs.board); state.board = hs.board.id; toast("أُضيفت الصورة، وستظهر للطلاب بعد النشر"); }
+    hide("hsModal");
+    renderBoards(); changed();
+  });
+
+  /* ---------- إدخال سريع وتفريغ ---------- */
+  const qfLines = () => $("qfText").value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+  function qfCount() {
+    const n = qfLines().length;
+    $("qfCount").textContent = !n ? "لم تكتب عبارات بعد." : n > 10 ? `${n} سطراً — ستُستخدم الأسطر العشرة الأولى فقط.` : `عدد العبارات: ${n} من 10`;
+  }
+  $("quickBtn").addEventListener("click", () => { $("qfText").value = ""; qfCount(); show("qfModal"); setTimeout(() => $("qfText").focus(), 30); });
+  $("qfText").addEventListener("input", qfCount);
+  $("qfCancel").addEventListener("click", () => hide("qfModal"));
+  $("qfApply").addEventListener("click", () => {
+    const L = qfLines().slice(0, 10);
+    if (!L.length) return;
+    L.forEach((t, k) => { state.boxes[k].t = t; });
+    hide("qfModal"); renderBoxes(); changed();
+    toast(`وُزّعت العبارات على الصناديق من 1 إلى ${L.length}`);
+  });
+  $("clearBtn").addEventListener("click", async () => {
+    if (!(await ask("سيتم مسح العبارات والصور من الصناديق العشرة. لن يتغير شيء عند الطلاب حتى تنشر.", "امسح الكل"))) return;
+    state.boxes = state.boxes.map(() => ({ t: "", i: "" }));
+    renderBoxes(); changed();
+  });
+  $("imgModal").addEventListener("click", () => hide("imgModal"));
+
+  /* ---------- الحالة والمسودة ---------- */
+  let draftT;
+  function changed() { dirty = true; setStatus(); clearTimeout(draftT); draftT = setTimeout(saveDraft, 500); }
+  function setStatus(kind, msg) {
+    const s = $("status");
+    if (msg) { s.textContent = msg; s.className = "status " + (kind || ""); return; }
+    s.textContent = dirty ? "● تعديلات لم تُنشر بعد" : "✓ ما تراه هنا هو المنشور للطلاب";
+    s.className = "status " + (dirty ? "dirty" : "ok");
+  }
+  function saveDraft() {
+    if (!state || !base || !dirty) return;
+    if (LS.set(K_DRAFT, JSON.stringify({ base: base.version, state }))) return;
+    const s = clone(state);   // لا تتسع الصور الجديدة: احفظ العبارات والإعدادات فقط
+    s.boxes.forEach((b) => { if (isData(b.i)) b.i = ""; });
+    s.boards = s.boards.filter((b) => !isData(b.src));
+    if (!s.boards.some((b) => b.id === s.board)) s.board = base.board;
+    LS.set(K_DRAFT, JSON.stringify({ base: base.version, state: s, partial: true }));
+  }
+  function offerDraft() {
+    let d = null;
+    try { d = JSON.parse(LS.get(K_DRAFT) || "null"); } catch (e) {}
+    if (!d || d.base !== base.version || !d.state || JSON.stringify(d.state) === JSON.stringify(state)) { LS.del(K_DRAFT); return; }
+    $("restoreTxt").textContent = d.partial
+      ? "لديك تعديلات لم تُنشر محفوظة على هذا الجهاز (العبارات والإعدادات؛ الصور الجديدة لم تُحفظ)."
+      : "لديك تعديلات لم تُنشر محفوظة على هذا الجهاز.";
+    show("restoreBar");
+    $("restoreYes").onclick = () => { state = d.state; hide("restoreBar"); renderAll(); changed(); toast("استُعيدت التعديلات"); };
+    $("restoreNo").onclick = () => { LS.del(K_DRAFT); hide("restoreBar"); };
+  }
+  window.addEventListener("beforeunload", (e) => { if (dirty && !publishing) { saveDraft(); e.preventDefault(); e.returnValue = ""; } });
+
+  /* ---------- الرابط والمعاينة ---------- */
+  $("copyLink").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(SITE); }
+    catch (e) { $("siteLink").select(); document.execCommand("copy"); }
+    toast("نُسخ الرابط ✓");
+  });
+  $("waLink").addEventListener("click", () => {
+    const msg = `🔑 ${(state && state.title) || "الصناديق السرية"}\nاكتب اسمك الثلاثي واكتشف ما خبّأته لك:\n${SITE}`;
+    window.open("https://wa.me/?text=" + encodeURIComponent(msg), "_blank", "noopener");
+  });
+  $("shareLink").addEventListener("click", () => {
+    navigator.share({ title: (state && state.title) || "الصناديق السرية", text: "اكتب اسمك الثلاثي واكتشف ما خبّأته لك:", url: SITE }).catch(() => {});
+  });
+  // تقرأ صفحة الطالب هذه الدالة في وضع المعاينة
+  window.sanadeeqPreview = () => ({
+    version: "preview", title: state.title, wait: state.wait, order: state.order, board: state.board,
+    boards: state.boards.map((b) => Object.assign({}, b, { src: src(b.src) })),
+    secret: state.boxes.map((b) => ({ t: b.t, i: b.i ? src(b.i) : "" }))
+  });
+  $("previewBtn").addEventListener("click", () => {
+    const w = window.open("index.html?preview=1", "sanadeeq-preview");
+    if (!w) toast("اسمح للمتصفح بفتح نافذة جديدة لعرض المعاينة");
+  });
+
+  /* ---------- النشر ---------- */
+  function setBusy(on) {
+    $("publishBtn").disabled = on; $("previewBtn").disabled = on;
+    $("publishBtn").innerHTML = on ? '<span class="spin"></span> جارٍ النشر…' : "🚀 نشر للطلاب";
+  }
+  async function publish() {
+    if (publishing || !state) return;
+    if (!state.boards.some((b) => b.id === state.board)) { toast("اختر صورة الصناديق أولاً"); return; }
+    const empties = state.boxes.map((b, k) => (!b.t.trim() && !b.i ? k + 1 : 0)).filter(Boolean);
+    if (empties.length === 10) { toast("الصناديق كلها فارغة؛ اكتب عبارة واحدة على الأقل"); return; }
+    if (empties.length && !(await ask(`${empties.length === 1 ? "الصندوق" : "الصناديق"} ${empties.join("، ")} ${empties.length === 1 ? "فارغ" : "فارغة"}، وسيظهر للطالب أنه فارغ. هل تريد النشر الآن؟`, "انشر"))) return;
+    publishing = true; setBusy(true); setStatus("", "⏳ جارٍ النشر…");
+    try {
+      const remote = await readConfig();
+      if (remote && base && base.version && remote.version !== base.version) {
+        if (!(await ask("نُشرت تعديلات أخرى على الصناديق (ربما من جهاز آخر) بعد أن فتحت هذه الصفحة. هل تريد استبدالها بما أمامك الآن؟", "استبدلها"))) { setStatus(); return; }
+      }
+      const version = Date.now(), files = [];
+      const boards = state.boards.map((b) => {
+        const o = { id: b.id, src: b.src, numbered: b.numbered !== false, rects: b.rects.map((r) => r.slice()) };
+        if (isData(b.src)) { o.src = `boards/${b.id}.jpg`; files.push({ path: o.src, b64: dataB64(b.src), data: b.src }); }
+        return o;
+      });
+      const boxes = state.boxes.map((b, k) => {
+        const o = { t: b.t.replace(/\s+$/, ""), i: b.i || "" };
+        if (isData(b.i)) { o.i = `media/${version}-${k + 1}.jpg`; files.push({ path: o.i, b64: dataB64(b.i), data: b.i }); }
+        return o;
+      });
+      const cfg = {
+        version, title: (state.title || "").trim() || "الصناديق السرية", wait: state.wait, order: state.order,
+        board: state.board, boards, secret: b64Utf8(JSON.stringify(boxes))
+      };
+      files.push({ path: "config.json", b64: b64Utf8(JSON.stringify(cfg, null, 1)) });
+      const keep = new Set(boards.map((b) => b.src).concat(boxes.map((b) => b.i).filter(Boolean)));
+      const stale = (tree) => tree.filter((e) => e.type === "blob" && /^(media|boards)\//.test(e.path) && !keep.has(e.path)).map((e) => e.path);
+      await commit(files, stale, "تحديث الصناديق السرية");
+      files.forEach((f) => { if (f.data) localImg[f.path] = f.data; });
+      base = cfg;
+      state.boards = clone(boards);
+      state.boxes = boxes.map((b) => ({ t: b.t, i: b.i }));
+      dirty = false; LS.del(K_DRAFT);
+      renderAll();
+      setStatus("ok", "✓ تم النشر — يصل للطلاب خلال دقيقة تقريباً…");
+      watchLive(version);
+    } catch (e) {
+      setStatus("err", "✗ " + explain(e));
+      if (e.status === 401) toast("اربط الجهاز بمفتاح جديد ثم انشر");
+    } finally {
+      publishing = false; setBusy(false);
+    }
+  }
+  $("publishBtn").addEventListener("click", publish);
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) { e.preventDefault(); if (state) publish(); }
+    if (e.key === "Escape") { hide("hsModal"); hide("qfModal"); hide("imgModal"); }
+  });
+  let watchT;
+  function watchLive(v) {
+    clearTimeout(watchT);
+    const t0 = Date.now();
+    const poll = async () => {
+      try {
+        const r = await fetch("config.json?t=" + Date.now(), { cache: "no-store" });
+        if (r.ok && (await r.json()).version === v) {
+          if (!dirty) setStatus("ok", "✓ وصل التحديث — الطلاب يرون الصناديق الجديدة الآن");
+          toast("وصل التحديث للطلاب ✓");
+          return;
+        }
+      } catch (e) {}
+      if (Date.now() - t0 < 4 * 60 * 1000) watchT = setTimeout(poll, 6000);
+      else if (!dirty) setStatus("ok", "✓ تم النشر، وقد يتأخر ظهوره دقائق قليلة");
+    };
+    watchT = setTimeout(poll, 4000);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
