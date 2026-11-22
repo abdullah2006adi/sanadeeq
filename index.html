@@ -359,7 +359,7 @@
         saved.name.forEach((v, i) => { if (fields[i]) fields[i].value = v || ""; });
         const btn = [...$("secList").children].find((b) => b.textContent === saved.section);
         if (btn) btn.click();
-        hint("أهلاً بعودتك! تأكد من اسمك ثم اضغط «اكتشف الأسرار»", true);
+        hint("أهلاً بعودتك!", true);
       }
       // تنزيل الأصوات المستخدمة فقط أثناء كتابة الطالب اسمه
       const used = new Set(boxes.map((b, i) => boxSound(i)).concat(finaleSound()).filter(Boolean));
@@ -582,8 +582,8 @@
     const empty = !text && !img;
     const already = seen.includes(i);
     $("ribbon").textContent = "الصندوق " + (i + 1);
-    $("to").textContent = empty ? "" : `يا ${student[0]}، هذا ما خبّأته لك:`;
-    $("to").classList.toggle("hidden", empty);
+    $("to").textContent = "";
+    $("to").classList.add("hidden");
     const t = $("secretText");
     t.className = "secret" + (empty ? " empty" : text.length > 380 ? " xlong" : text.length > 150 ? " long" : "");
     if (empty) t.textContent = "هذا الصندوق فارغ هذه المرة… جرّب صندوقاً آخر!";
