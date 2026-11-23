@@ -93,6 +93,11 @@
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .sel{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:14.5px;font-weight:700;max-width:100%}
   .box-sound{display:flex;align-items:center;gap:6px}
+  .box-link{display:flex;align-items:center;gap:6px}
+  .box-link span{font-size:15px}
+  .box-link input{flex:1;min-width:0;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px;direction:ltr;text-align:left;outline:none}
+  .box-link input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #f5c45133}
+  .box-link input.bad{border-color:#d33}
   .box-voice{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:6px;border-top:1px dashed var(--line)}
   .box-voice .lbl{font-size:13px;font-weight:800;color:var(--muted)}
   .box-voice .ok{font-size:13px;font-weight:800;color:var(--ok)}
@@ -508,7 +513,7 @@
   }
   // يكمّل أي حقول ناقصة (مثلاً مسودة محفوظة قبل إضافة الأصوات)
   function normalizeState(s) {
-    s.boxes = (s.boxes || []).slice(0, 10).map((b) => ({ t: String((b && b.t) || ""), i: String((b && b.i) || ""), s: String((b && b.s) || ""), v: String((b && b.v) || "") }));
+    s.boxes = (s.boxes || []).slice(0, 10).map((b) => ({ t: String((b && b.t) || ""), i: String((b && b.i) || ""), s: String((b && b.s) || ""), v: String((b && b.v) || ""), l: String((b && b.l) || "") }));
     while (s.boxes.length < 10) s.boxes.push({ t: "", i: "", s: "", v: "" });
     if (!("sound" in s)) s.sound = DEFAULT_SOUND;
     if (!("finale" in s)) s.finale = DEFAULT_FINALE;
@@ -765,6 +770,12 @@
   }
   window.addEventListener("resize", () => { clearTimeout(resizeAll.t); resizeAll.t = setTimeout(resizeAll, 150); });
 
+  // يقبل «example.com» ويكمّله إلى https://… ويرفض ما ليس رابطاً
+  function normLink(x) {
+    x = String(x || "").trim(); if (!x) return "";
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(x)) x = "https://" + x;
+    try { const u = new URL(x); return /^https?:$/.test(u.protocol) && u.hostname.includes(".") ? u.href : ""; } catch (e) { return ""; }
+  }
   function renderBoxes() {
     const wrap = $("boxes");
     wrap.innerHTML = "";
@@ -774,6 +785,7 @@
       card.innerHTML = `<div class="box-head"><span class="box-no">${i + 1}</span><span>الصندوق ${i + 1}</span><span class="box-state"></span></div>
         <textarea rows="3" placeholder="اكتب العبارة المخبّأة في هذا الصندوق…" aria-label="عبارة الصندوق ${i + 1}"></textarea>
         <div class="img-zone"></div>
+        <div class="box-link"><span aria-hidden="true">🔗</span><input type="url" inputmode="url" placeholder="رابط يفتح عند الضغط على الصورة (اختياري)" aria-label="رابط الصندوق ${i + 1}"></div>
         <div class="box-sound"><span aria-hidden="true">🔊</span><select class="sel" aria-label="صوت الصندوق ${i + 1}"></select></div>
         <div class="box-voice"></div>`;
       const sndSel = card.querySelector(".box-sound select");
@@ -790,6 +802,11 @@
         if (eff) playSound(eff); else toast("هذا الصندوق بلا صوت");
       }));
       card.querySelector(".box-sound .btn").setAttribute("aria-label", "استمع لصوت الصندوق " + (i + 1));
+      const li = card.querySelector(".box-link input");
+      li.value = b.l || "";
+      li.addEventListener("input", () => { b.l = li.value.trim(); li.classList.toggle("bad", !!b.l && !normLink(b.l)); boxState(card, b); changed(); });
+      li.addEventListener("change", () => { const n = normLink(b.l); if (n && n !== b.l) { b.l = n; li.value = n; changed(); } });
+      li.classList.toggle("bad", !!b.l && !normLink(b.l));
       const ta = card.querySelector("textarea");
       ta.value = b.t;
       ta.addEventListener("input", () => { b.t = ta.value; autosize(ta); boxState(card, b); changed(); });
@@ -813,7 +830,7 @@
   }
   function boxState(card, b) {
     const s = card.querySelector(".box-state"), t = b.t.trim();
-    const parts = [t && "عبارة", b.i && "صورة", b.v && "تعليق"].filter(Boolean);
+    const parts = [t && "عبارة", b.i && "صورة", b.v && "تعليق", b.l && "رابط"].filter(Boolean);
     s.textContent = parts.length ? parts.join(" + ") : "فارغ";
     s.classList.toggle("full", parts.length > 0);
   }
@@ -1184,7 +1201,7 @@
     version: "preview", title: state.title, wait: state.wait, order: state.order, board: state.board,
     boards: state.boards.map((b) => Object.assign({}, b, { src: src(b.src) })),
     sound: state.sound ? src(state.sound) : "", finale: state.finale ? src(state.finale) : "",
-    secret: state.boxes.map((b) => ({ t: b.t, i: b.i ? src(b.i) : "", s: b.s === "none" ? "none" : b.s ? src(b.s) : "", v: b.v ? src(b.v) : "" }))
+    secret: state.boxes.map((b) => ({ t: b.t, i: b.i ? src(b.i) : "", s: b.s === "none" ? "none" : b.s ? src(b.s) : "", v: b.v ? src(b.v) : "", l: normLink(b.l) }))
   });
   $("previewBtn").addEventListener("click", () => {
     const w = window.open("index.html?preview=1", "sanadeeq-preview");
@@ -1199,6 +1216,8 @@
   async function publish() {
     if (publishing || !state) return;
     if (!state.boards.some((b) => b.id === state.board)) { toast("اختر صورة الصناديق أولاً"); return; }
+    const badL = state.boxes.map((b, k) => (b.l && !normLink(b.l) ? k + 1 : 0)).filter(Boolean);
+    if (badL.length) { toast("الرابط في الصندوق " + badL.join("، ") + " غير صحيح"); return; }
     const empties = state.boxes.map((b, k) => (!b.t.trim() && !b.i ? k + 1 : 0)).filter(Boolean);
     if (empties.length === 10) { toast("الصناديق كلها فارغة؛ اكتب عبارة واحدة على الأقل"); return; }
     if (empties.length && !(await ask(`${empties.length === 1 ? "الصندوق" : "الصناديق"} ${empties.join("، ")} ${empties.length === 1 ? "فارغ" : "فارغة"}، وسيظهر للطالب أنه فارغ. هل تريد النشر الآن؟`, "انشر"))) return;
@@ -1229,7 +1248,7 @@
       });
       const mapS = (x) => (x && soundPath[x]) || x || "";
       const boxes = state.boxes.map((b) => {
-        const o = { t: b.t.replace(/\s+$/, ""), i: b.i || "", s: b.s === "none" ? "none" : mapS(b.s), v: b.v || "" };
+        const o = { t: b.t.replace(/\s+$/, ""), i: b.i || "", s: b.s === "none" ? "none" : mapS(b.s), v: b.v || "", l: normLink(b.l) };
         if (isData(b.i)) o.i = newRef(b.i);
         if (isData(b.v)) o.v = newRef(b.v);
         return o;
@@ -1248,7 +1267,7 @@
       files.forEach((f) => { localImg[f.ref] = f.data; });
       base = cfg;
       state.boards = clone(boards);
-      state.boxes = boxes.map((b) => ({ t: b.t, i: b.i, s: b.s, v: b.v }));
+      state.boxes = boxes.map((b) => ({ t: b.t, i: b.i, s: b.s, v: b.v, l: b.l || "" }));
       state.customSounds = clone(customSounds);
       state.sound = cfg.sound; state.finale = cfg.finale;
       dirty = false; LS.del(K_DRAFT);

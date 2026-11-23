@@ -146,6 +146,8 @@
   .secret.empty{font-family:'Tajawal',sans-serif;font-weight:700;font-size:20px;color:#8a7650}
   .secret a{display:inline-block;margin:6px 0;padding:4px 14px;border-radius:99px;font-family:'Tajawal',sans-serif;font-size:17px;font-weight:800;
     color:#fff;background:#24317a;text-decoration:none}
+  .secret-img.linked{cursor:pointer;outline:3px solid #f0a91f;outline-offset:3px}
+  .open-link{display:table;margin:12px auto 0;border-radius:99px;padding:8px 18px;font:800 16px 'Tajawal',sans-serif;color:#24317a;background:#fde9b3;text-decoration:none}
   .replay{display:inline-block;margin-top:12px;border:0;border-radius:99px;padding:8px 18px;font:800 16px 'Tajawal',sans-serif;color:#fff;background:#24317a;cursor:pointer}
   .secret-img{display:none;max-width:100%;max-height:46vh;margin:14px auto 0;border-radius:16px;box-shadow:0 10px 28px #0003;cursor:zoom-in}
   .foot{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:20px}
@@ -216,6 +218,7 @@
     <p class="to" id="to"></p>
     <div class="secret" id="secretText"></div>
     <img class="secret-img" id="secretImg" alt="صورة الصندوق">
+    <a class="open-link hidden" id="openLink" target="_blank" rel="noopener noreferrer">🔗 افتح الرابط</a>
     <button class="replay hidden" id="replay" type="button">🔊 أعد الاستماع</button>
     <div class="foot">
       <div class="ring" id="ring">
@@ -630,6 +633,13 @@
     $("replay").classList.toggle("hidden", !hasVoice || Sound.muted);
     const im = $("secretImg");
     if (img) { im.src = asset(img); im.style.display = "block"; } else { im.removeAttribute("src"); im.style.display = "none"; }
+    const link = /^https?:\/\//i.test(String(box.l || "")) ? String(box.l) : "";
+    im.classList.toggle("linked", !!link);
+    im.title = link ? "اضغط لفتح الرابط" : "";
+    const ol = $("openLink");
+    if (link) ol.href = link; else ol.removeAttribute("href");
+    ol.textContent = img ? "🔗 اضغط على الصورة أو هنا لفتح الرابط" : "🔗 افتح الرابط";
+    ol.classList.toggle("hidden", !link);
     $("secretModal").classList.add("on");
     $("secretModal").querySelector(".card").scrollTop = 0;
     burst(false);
@@ -695,7 +705,9 @@
     else if ($("secretModal").classList.contains("on")) closeSecret();
     else $("doneModal").classList.remove("on");
   });
-  $("secretImg").addEventListener("click", () => { $("lightboxImg").src = $("secretImg").src; $("lightbox").classList.add("on"); });
+  $("secretImg").addEventListener("click", (e) => {
+    const l = $("openLink").getAttribute("href");
+    if (l) { e.stopPropagation(); window.open(l, "_blank", "noopener"); return; } $("lightboxImg").src = $("secretImg").src; $("lightbox").classList.add("on"); });
   $("lightbox").addEventListener("click", () => $("lightbox").classList.remove("on"));
 
   /* ---------- زينة ---------- */
