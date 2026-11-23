@@ -367,10 +367,26 @@
   }
   $("muteBtn").addEventListener("click", () => { Sound.toggle(); renderMute(); if (!Sound.muted) Sound.unlock(); });
 
+  // الصناديق الجاهزة رُقّمت من اليمين لليسار: صورة جديدة وترتيب أماكن معكوس في كل صف
+  function rtlBoards(list) {
+    return (list || []).map((b) => {
+      const m = /^boards\/board([1-5])\.jpg$/.exec((b && b.src) || "");
+      if (!m || !Array.isArray(b.rects) || b.rects.length !== 10) return b;
+      return Object.assign({}, b, { src: "boards/board" + m[1] + "-rtl.jpg", rects: b.rects.slice(0, 5).reverse().concat(b.rects.slice(5).reverse()) });
+    });
+  }
+  // ترتيب عشوائي لمحتويات الصناديق: يتغير كل مرة تُفتح الصفحة ويختلف من طالب لآخر
+  function shuffled(n) {
+    const a = Array.from({ length: n }, (_, k) => k), r = new Uint32Array(n);
+    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(r) : r.forEach((_, k) => (r[k] = Math.random() * 4294967296));
+    for (let k = n - 1; k > 0; k--) { const j = r[k] % (k + 1); [a[k], a[j]] = [a[j], a[k]]; }
+    return a;
+  }
   async function start() {
     if (PREVIEW) { $("previewBanner").classList.remove("hidden"); document.body.style.paddingTop = "30px"; }
     try {
       cfg = await getConfig();
+      cfg.boards = rtlBoards(cfg.boards);
       boxes = decodeSecret(cfg.secret).slice(0, 10);
       if (!PREVIEW) {
         const bd = (cfg.boards || []).find((b) => b.id === cfg.board) || (cfg.boards || [])[0];
@@ -522,11 +538,15 @@
   /* ---------- لوحة الصناديق ---------- */
   const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#ffe08a" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="10" rx="2.2" fill="#ffe08a33"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
   const spots = [];
+  let perm = [];                       // perm[رقم المكان] = رقم المحتوى
+  const content = (p) => perm[p];
   function buildBoard() {
     const holder = $("board");
     spots.length = 0;
     holder.querySelectorAll(".spot").forEach((s) => s.remove());
-    (board.rects || []).slice(0, 10).forEach((r, i) => {
+    const rects = (board.rects || []).slice(0, 10);
+    perm = PREVIEW ? rects.map((_, k) => k) : (window.__sanadeeqPerm || shuffled)(rects.length);
+    rects.forEach((r, i) => {
       const s = document.createElement("button");
       s.type = "button";
       s.className = "spot";
@@ -539,12 +559,12 @@
     });
     refresh();
   }
-  const nextInOrder = () => { for (let i = 0; i < 10; i++) if (!seen.includes(i)) return i; return -1; };
-  const isLocked = (i) => !!cfg.order && !seen.includes(i) && i !== nextInOrder();
+  const nextInOrder = () => { for (let i = 0; i < spots.length; i++) if (!seen.includes(content(i))) return i; return -1; };
+  const isLocked = (i) => !!cfg.order && !seen.includes(content(i)) && i !== nextInOrder();
 
   function refresh() {
     spots.forEach((s, i) => {
-      const done = seen.includes(i), locked = isLocked(i);
+      const done = seen.includes(content(i)), locked = isLocked(i);
       s.classList.toggle("seen", done);
       s.classList.toggle("locked", locked);
       s.classList.toggle("live", !done && !locked);
@@ -586,10 +606,10 @@
       return;
     }
     busy = true;
-    openSound = Sound.play(boxSound(i));
+    openSound = Sound.play(boxSound(content(i)));
     s.classList.remove("live", "shake");
     s.classList.add("opening");
-    setTimeout(() => { s.classList.remove("opening"); showSecret(i); }, 700);
+    setTimeout(() => { s.classList.remove("opening"); showSecret(content(i), i); }, 700);
   }
 
   function renderText(el, text) {
@@ -615,14 +635,14 @@
     if (openSound) { openSound.stop(0.35); openSound = null; }   // يخفت صوت الفتح ليُسمع التعليق بوضوح
     voice = Sound.play(v);
   }
-  function showSecret(i) {
+  function showSecret(i, place) {
     current = i;
     const box = boxes[i] || {};
     const text = String(box.t || "").trim(), img = String(box.i || "");
     const hasVoice = !!box.v;
     const empty = !text && !img && !hasVoice;
     const already = seen.includes(i);
-    $("ribbon").textContent = "الصندوق " + (i + 1);
+    $("ribbon").textContent = "الصندوق " + ((place ?? i) + 1);
     $("to").textContent = "";
     $("to").classList.add("hidden");
     const t = $("secretText");

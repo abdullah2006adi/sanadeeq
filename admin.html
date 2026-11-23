@@ -498,13 +498,21 @@
     hide("editor"); hide("dock"); hide("loadingCard"); show("loginCard"); hide("logoutBtn");
     if (msg !== undefined) $("lgMsg").textContent = msg;
   }
+  // الصناديق الجاهزة رُقّمت من اليمين لليسار: صورة جديدة وترتيب أماكن معكوس في كل صف
+  function rtlBoards(list) {
+    return (list || []).map((b) => {
+      const m = /^boards\/board([1-5])\.jpg$/.exec((b && b.src) || "");
+      if (!m || !Array.isArray(b.rects) || b.rects.length !== 10) return b;
+      return Object.assign({}, b, { src: "boards/board" + m[1] + "-rtl.jpg", rects: b.rects.slice(0, 5).reverse().concat(b.rects.slice(5).reverse()) });
+    });
+  }
   function fromConfig(cfg) {
     let boxes = [];
     try { boxes = cfg && cfg.secret ? JSON.parse(utf8FromB64(cfg.secret)) : []; } catch (e) { boxes = []; }
     const wait = cfg && Number.isFinite(+cfg.wait) ? +cfg.wait : 10;
     return normalizeState({
       title: (cfg && cfg.title) || "الصناديق السرية", wait, order: !!(cfg && cfg.order),
-      board: cfg && cfg.board, boards: clone((cfg && cfg.boards) || []), boxes,
+      board: cfg && cfg.board, boards: rtlBoards(clone((cfg && cfg.boards) || [])), boxes,
       sound: cfg && "sound" in cfg ? String(cfg.sound || "") : DEFAULT_SOUND,
       finale: cfg && "finale" in cfg ? String(cfg.finale || "") : DEFAULT_FINALE,
       customSounds: clone((cfg && cfg.customSounds) || []),
