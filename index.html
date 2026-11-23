@@ -243,6 +243,17 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const PREVIEW = new URLSearchParams(location.search).has("preview");
+  const FBCFG = {
+    apiKey: "AIzaSyBPvtM0azYwbAgPfBu8WROT5SJgB7Uk9go", authDomain: "sanadeeq-eba14.firebaseapp.com", projectId: "sanadeeq-eba14",
+    storageBucket: "sanadeeq-eba14.firebasestorage.app", messagingSenderId: "363973827345", appId: "1:363973827345:web:2fa5e49111ca4d247b8ab0"
+  };
+  const FB_CDN = "https://www.gstatic.com/firebasejs/10.12.2/";
+  let fbBase = null;
+  window.sanadeeqFirebase = () => fbBase || (fbBase = (async () => {
+    const [{ initializeApp }, F] = await Promise.all([import(FB_CDN + "firebase-app.js"), import(FB_CDN + "firebase-firestore.js")]);
+    const app = initializeApp(FBCFG);
+    return { app, F, db: F.getFirestore(app) };
+  })().catch((e) => { fbBase = null; throw e; }));
   const memory = {};
   const store = PREVIEW
     ? { get: (k, d) => (k in memory ? memory[k] : d), set: (k, v) => { memory[k] = v; } }
@@ -268,11 +279,26 @@
       } catch (e) {}
       throw new Error("preview");
     }
+    // المحتوى المنشور من لوحة المعلم في Firebase، والاحتياط config.json على GitHub
+    try {
+      const { F, db } = await withTimeout(window.sanadeeqFirebase(), 9000);
+      const snap = await withTimeout(F.getDoc(F.doc(db, "site", "config")), 9000);
+      if (snap.exists()) return JSON.parse(snap.data().json);
+    } catch (e) {}
     const r = await fetch("config.json?t=" + Date.now(), { cache: "no-store" });
     if (!r.ok) throw new Error("http " + r.status);
     return r.json();
   }
-  const asset = (src) => !src ? "" : /^(data:|blob:|https?:)/.test(src) ? src : src + (src.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(cfg.version);
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+  // الصور والأصوات التي رفعها المعلم محفوظة في قاعدة البيانات بمراجع fs:…
+  const fsData = {};
+  async function loadFs(refs) {
+    const list = [...new Set(refs)].filter((r) => typeof r === "string" && r.startsWith("fs:") && !fsData[r]);
+    if (!list.length) return;
+    const { F, db } = await window.sanadeeqFirebase();
+    await Promise.all(list.map(async (r) => { try { const d = await F.getDoc(F.doc(db, "files", r.slice(3))); if (d.exists()) fsData[r] = d.data().d; } catch (e) {} }));
+  }
+  const asset = (src) => !src ? "" : src.startsWith("fs:") ? fsData[src] || "" : /^(data:|blob:|https?:)/.test(src) ? src : src + (src.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(cfg.version);
 
   /* ---------- الأصوات ----------
      cfg.sound  : صوت فتح الصناديق كلها ("" = بلا صوت). إن لم يُحدَّد فالافتراضي «بريق سحري».
@@ -343,6 +369,10 @@
     try {
       cfg = await getConfig();
       boxes = decodeSecret(cfg.secret).slice(0, 10);
+      if (!PREVIEW) {
+        const bd = (cfg.boards || []).find((b) => b.id === cfg.board) || (cfg.boards || [])[0];
+        await loadFs([bd && bd.src, cfg.sound, cfg.finale].concat(boxes.flatMap((b) => [b && b.i, b && b.v, b && b.s])));
+      }
       while (boxes.length < 10) boxes.push({});
       board = (cfg.boards || []).find((b) => b.id === cfg.board) || (cfg.boards || [])[0];
       if (!board) throw new Error("no board");
@@ -709,16 +739,12 @@
 </script>
 <script type="module">
 // تسجيل دخول الطالب وما فتحه في قاعدة بيانات Firebase (مشروع sanadeeq) ليظهر في لوحة المعلم
-const FB = {
-  apiKey: "AIzaSyBPvtM0azYwbAgPfBu8WROT5SJgB7Uk9go", authDomain: "sanadeeq-eba14.firebaseapp.com", projectId: "sanadeeq-eba14",
-  storageBucket: "sanadeeq-eba14.firebasestorage.app", messagingSenderId: "363973827345", appId: "1:363973827345:web:2fa5e49111ca4d247b8ab0"
-};
-const V = "10.12.2", CDN = `https://www.gstatic.com/firebasejs/${V}/`;
+const CDN = "https://www.gstatic.com/firebasejs/10.12.2/";
 let ready = null, ref = null, pending = Promise.resolve();
 function load() {
   if (!ready) ready = (async () => {
-    const [{ initializeApp }, A, F] = await Promise.all([import(CDN + "firebase-app.js"), import(CDN + "firebase-auth.js"), import(CDN + "firebase-firestore.js")]);
-    const app = initializeApp(FB), auth = A.getAuth(app), db = F.getFirestore(app);
+    const { app, F, db } = await window.sanadeeqFirebase();
+    const A = await import(CDN + "firebase-auth.js"), auth = A.getAuth(app);
     await auth.authStateReady();
     const user = auth.currentUser || (await A.signInAnonymously(auth)).user;
     return { db, F, uid: user.uid };

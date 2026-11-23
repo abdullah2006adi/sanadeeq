@@ -112,7 +112,7 @@
   .chipf.on{background:var(--navy);border-color:var(--navy);color:#fff}
   .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
   .f{display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:14.5px}
-  .f input[type=text],.f input[type=number]{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:16px;outline:none;font-weight:700}
+  .f input[type=text],.f input[type=number],.f input[type=email],.f input[type=password]{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:16px;outline:none;font-weight:700}
   .f input:focus{border-color:var(--gold);box-shadow:0 0 0 3px #f5c45133}
   .radio{display:flex;gap:8px;flex-wrap:wrap}
   .radio label{display:flex;align-items:center;gap:6px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-weight:700;font-size:14.5px}
@@ -175,26 +175,31 @@
 <header class="top">
   <div class="brand"><img src="apple-touch-icon.png" alt="" style="border-radius:9px"><div><h1>لوحة المعلم</h1><small>الصناديق السرية</small></div></div>
   <div class="top-actions">
-    <span class="chip" id="conn">…</span>
+    <button class="light hidden" id="logoutBtn" type="button" style="background:none;cursor:pointer;font:inherit">خروج</button>
     <a class="light" href="./" target="_blank" rel="noopener">صفحة الطلاب ↗</a>
   </div>
 </header>
 
 <main>
-  <section class="card hidden" id="connectCard">
-    <h2>🔑 اربط هذا الجهاز بحسابك في GitHub</h2>
-    <p class="lead">خطوة واحدة لكل جهاز. إذا كانت صفحة «مواقعي» مربوطة على هذا الجهاز فلن تحتاجها، لأن اللوحة تستخدم المفتاح نفسه.</p>
-    <div class="link-box">
-      <input id="tokenInput" type="text" dir="ltr" autocomplete="off" spellcheck="false" placeholder="github_pat_…" style="-webkit-text-security:disc">
-      <button class="btn navy" id="saveToken" type="button">ربط الجهاز</button>
+  <section class="card hidden" id="loginCard" style="max-width:640px;margin-inline:auto">
+    <h2>🔐 دخول المعلم</h2>
+    <p class="lead">ادخل ببريدك الإلكتروني وكلمة السر. أول مرة؟ اكتب كلمة سر جديدة تختارها، ثم اضغط «إنشاء الحساب».</p>
+    <form id="lgForm" class="grid2" autocomplete="on" onsubmit="return false">
+      <label class="f">البريد الإلكتروني<input type="email" id="lgEmail" dir="ltr" autocomplete="username" value="abdullah2006adigm@gmail.com"></label>
+      <label class="f">كلمة السر<input type="password" id="lgPass" dir="ltr" autocomplete="current-password"></label>
+    </form>
+    <div class="row" style="margin-top:14px">
+      <button class="btn navy" id="lgIn" type="button">دخول</button>
+      <button class="btn" id="lgNew" type="button">إنشاء الحساب (أول مرة)</button>
+      <button class="btn" id="lgForgot" type="button">نسيت كلمة السر</button>
+      <button class="btn" id="lgGoogle" type="button">الدخول بحساب Google</button>
     </div>
-    <p class="meta" id="connectMsg"></p>
-    <ol class="steps">
-      <li>افتح <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">صفحة إنشاء المفتاح في GitHub</a>.</li>
-      <li>في <b>Repository access</b> اختر <b>All repositories</b>.</li>
-      <li>في <b>Permissions</b> اختر <b>Contents</b> ثم <b>Read and write</b>.</li>
-      <li>اضغط <b>Generate token</b>، وانسخ المفتاح والصقه هنا.</li>
-    </ol>
+    <p class="meta" id="lgMsg"></p>
+    <div class="notice hidden" id="lgVerify" style="margin:12px 0 0">
+      <span>أرسلنا رابط تفعيل إلى بريدك. افتح الرسالة واضغط الرابط، ثم ارجع هنا واضغط «فعّلته، ادخل».</span>
+      <button class="btn sm navy" id="lgCheck" type="button">فعّلته، ادخل</button>
+      <button class="btn sm" id="lgResend" type="button">أعد إرسال الرابط</button>
+    </div>
   </section>
 
   <section class="card" id="loadingCard"><p class="lead" id="loadingMsg">جارٍ التحميل…</p><button class="btn hidden" id="retryBtn" type="button">إعادة المحاولة</button></section>
@@ -215,12 +220,8 @@
 
     <section class="card" id="studentsCard">
       <h2>📋 الطلاب الذين دخلوا</h2>
-      <div id="stSignedOut">
-        <p class="lead">تظهر هنا أسماء الطلاب وشعبهم وعدد الصناديق التي فتحها كل منهم. للحفاظ على خصوصية الطلاب لا يراها إلا حسابك في Google.</p>
-        <button class="btn navy" id="stSignIn" type="button">عرض الأسماء (الدخول بحساب Google)</button>
-        <p class="meta" id="stMsg"></p>
-      </div>
-      <div id="stSignedIn" class="hidden">
+      <p class="meta" id="stMsg"></p>
+      <div id="stSignedIn">
         <div class="row" style="margin-bottom:10px">
           <label for="stRound" style="font-weight:800">الجولة:</label>
           <select class="sel" id="stRound"></select>
@@ -232,7 +233,6 @@
           <button class="btn sm danger" id="stDelRound" type="button">🗑 مسح هذه الجولة</button>
           <button class="btn sm danger" id="stDelOld" type="button">🗑 مسح الجولات السابقة</button>
         </div>
-        <p class="meta"><span id="stWho"></span> · <button id="stSignOut" type="button" style="border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit">خروج</button></p>
       </div>
     </section>
 
@@ -347,10 +347,21 @@
 <script>
 (() => {
   "use strict";
-  const OWNER = "abdullah2006adi", REPO = "sanadeeq", BRANCH = "main";
-  const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
-  const SITE = `https://${OWNER}.github.io/${REPO}/`;
-  const K_TOKEN = "mawaqi-token";            // المفتاح المشترك مع «مواقعي» وبقية مواقعك
+  const SITE = "https://abdullah2006adi.github.io/sanadeeq/";
+  const TEACHER = "abdullah2006adigm@gmail.com";
+  const FBCFG = {
+    apiKey: "AIzaSyBPvtM0azYwbAgPfBu8WROT5SJgB7Uk9go", authDomain: "sanadeeq-eba14.firebaseapp.com", projectId: "sanadeeq-eba14",
+    storageBucket: "sanadeeq-eba14.firebasestorage.app", messagingSenderId: "363973827345", appId: "1:363973827345:web:2fa5e49111ca4d247b8ab0"
+  };
+  const CDN = "https://www.gstatic.com/firebasejs/10.12.2/";
+  // Firebase: حساب المعلم + حفظ المحتوى (site/config) والصور والأصوات (files/…)
+  window.sanadeeqFB = (async () => {
+    const [{ initializeApp }, A, F] = await Promise.all([import(CDN + "firebase-app.js"), import(CDN + "firebase-auth.js"), import(CDN + "firebase-firestore.js")]);
+    const app = initializeApp(FBCFG), auth = A.getAuth(app);
+    auth.languageCode = "ar";
+    return { A, F, auth, db: F.getFirestore(app) };
+  })();
+  window.sanadeeqFB.catch(() => {});
   const K_DRAFT = "sanadeeq-admin-draft";
   const $ = (id) => document.getElementById(id);
   const show = (id) => $(id).classList.remove("hidden");
@@ -361,7 +372,6 @@
     del(k) { try { localStorage.removeItem(k); } catch (e) {} }
   };
 
-  let token = (LS.get(K_TOKEN) || "").trim();
   let state = null, base = null, dirty = false, publishing = false;
   const localImg = {};   // صور وأصوات نُشرت للتو ولم يكتمل ظهورها على الموقع بعد
   const DEFAULT_SOUND = "sounds/sparkle.mp3", DEFAULT_FINALE = "sounds/celebrate.mp3";
@@ -380,13 +390,14 @@
     if (!path) return "";
     if (isData(path) || /^https?:/.test(path)) return path;
     if (localImg[path]) return localImg[path];
+    if (path.startsWith("fs:")) return "";
     return path + "?v=" + encodeURIComponent((base && base.version) || "");
   }
   function setImg(img, path) {
     img.onerror = null;
     img.src = src(path);
-    if (path && !isData(path) && !/^https?:/.test(path) && !localImg[path]) {
-      img.onerror = () => { img.onerror = null; img.src = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}`; };
+    if (path && !isData(path) && !/^https?:/.test(path) && !path.startsWith("fs:") && !localImg[path]) {
+      img.onerror = () => { img.onerror = null; img.src = `https://raw.githubusercontent.com/abdullah2006adi/sanadeeq/main/${path}`; };
     }
   }
   function button(label, cls, fn) { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = label; b.addEventListener("click", fn); return b; }
@@ -411,6 +422,15 @@
     inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) cb(f); };
     inp.click();
   }
+  // تصغير الصورة حتى تتسع في قاعدة البيانات
+  async function compressFit(file, maxSide, quality) {
+    let side = maxSide, q = quality, d = await compress(file, side, q);
+    for (let k = 0; d.length > MAX_FILE * 0.95 && k < 8; k++) {
+      if (q > 0.62) q -= 0.08; else side = Math.round(side * 0.82);
+      d = await compress(file, side, q);
+    }
+    return d;
+  }
   function compress(file, maxSide, quality) {
     return new Promise((resolve, reject) => {
       if (!file || (file.type && !file.type.startsWith("image/"))) return reject(new Error("not image"));
@@ -431,68 +451,47 @@
     });
   }
 
-  /* ---------- GitHub ---------- */
-  async function gh(path, opt) {
-    const o = opt || {};
-    let r;
-    try {
-      r = await fetch(API + path, {
-        method: o.method || "GET", cache: "no-store",
-        headers: Object.assign({ Authorization: "Bearer " + token, Accept: o.raw ? "application/vnd.github.raw+json" : "application/vnd.github+json" },
-                               o.body ? { "Content-Type": "application/json" } : {}),
-        body: o.body ? JSON.stringify(o.body) : undefined
-      });
-    } catch (e) { const err = new Error("network"); err.status = 0; throw err; }
-    if (!r.ok) { const err = new Error("http " + r.status); err.status = r.status; try { err.body = await r.json(); } catch (e) {} throw err; }
-    if (o.raw) return r.text();
-    return r.status === 204 ? null : r.json();
-  }
+  /* ---------- الحفظ في Firebase ---------- */
+  const MAX_FILE = 950000;   // حد المستند الواحد في قاعدة البيانات (نحو 1 ميغابايت)
   function explain(e) {
-    if (!e || !e.status) return "تعذّر الاتصال بـ GitHub. تحقّق من الإنترنت ثم أعد المحاولة.";
-    if (e.status === 401) return "المفتاح غير صالح أو انتهت صلاحيته. اربط الجهاز بمفتاح جديد.";
-    if (e.status === 403 || e.status === 404) return "المفتاح لا يملك صلاحية الكتابة في مستودع sanadeeq. تأكد أنه يشمل All repositories وصلاحية Contents: Read and write.";
-    if (e.status === 409 || e.status === 422) return "حدث تعارض مع تعديل نُشر للتو. أعد المحاولة.";
-    return "حدث خطأ (" + e.status + "). أعد المحاولة.";
+    const c = (e && e.code) || "";
+    if (/permission-denied/.test(c)) return "حسابك لا يملك صلاحية النشر. اخرج ثم ادخل بحساب المعلم.";
+    if (/unavailable|network|deadline/.test(c) || !c) return "تعذّر الاتصال. تحقّق من الإنترنت ثم أعد المحاولة.";
+    if (/too-big|invalid-argument|resource-exhausted/.test(c)) return "أحد الملفات كبير جداً. صغّر الصورة أو قصّر التسجيل ثم انشر.";
+    return "حدث خطأ (" + c + "). أعد المحاولة.";
   }
   async function readConfig() {
-    try { return JSON.parse(await gh("/contents/config.json?ref=" + BRANCH, { raw: true })); }
-    catch (e) { if (e.status === 404) return null; throw e; }
+    const { F, db } = await window.sanadeeqFB;
+    const snap = await F.getDoc(F.doc(db, "site", "config"));
+    if (snap.exists()) return JSON.parse(snap.data().json);
+    // أول مرة: المحتوى الذي نُشر سابقاً على GitHub
+    const r = await fetch("config.json?t=" + Date.now(), { cache: "no-store" });
+    return r.ok ? r.json() : null;
   }
-  // نشر كل الملفات في دفعة واحدة (commit واحد)
-  async function commit(files, staleFn, message) {
-    for (let attempt = 0; ; attempt++) {
-      const ref = await gh(`/git/ref/heads/${BRANCH}`);
-      const head = await gh(`/git/commits/${ref.object.sha}`);
-      const tree = await gh(`/git/trees/${head.tree.sha}?recursive=1`);
-      const entries = [];
-      for (const f of files) {
-        if (!f.sha) f.sha = (await gh("/git/blobs", { method: "POST", body: { content: f.b64, encoding: "base64" } })).sha;
-        entries.push({ path: f.path, mode: "100644", type: "blob", sha: f.sha });
-      }
-      staleFn(tree.tree || []).forEach((p) => entries.push({ path: p, mode: "100644", type: "blob", sha: null }));
-      const newTree = await gh("/git/trees", { method: "POST", body: { base_tree: head.tree.sha, tree: entries } });
-      const c = await gh("/git/commits", { method: "POST", body: { message, tree: newTree.sha, parents: [ref.object.sha] } });
-      try { await gh(`/git/refs/heads/${BRANCH}`, { method: "PATCH", body: { sha: c.sha } }); return c.sha; }
-      catch (e) { if (attempt < 2 && (e.status === 409 || e.status === 422)) continue; throw e; }
-    }
+  // كل المراجع fs:… المستخدمة في إعداد ما
+  function fsRefs(cfg) {
+    if (!cfg) return [];
+    let boxes = [];
+    try { boxes = cfg.secret ? JSON.parse(utf8FromB64(cfg.secret)) : []; } catch (e) {}
+    const all = [].concat((cfg.boards || []).map((b) => b.src), boxes.flatMap((b) => [b.i, b.v, b.s]), (cfg.customSounds || []).map((c) => c.src), [cfg.sound, cfg.finale]);
+    return [...new Set(all.filter((x) => typeof x === "string" && x.startsWith("fs:")))];
+  }
+  async function loadFsFiles(refs) {
+    const { F, db } = await window.sanadeeqFB;
+    await Promise.all(refs.filter((r) => !localImg[r]).map(async (r) => {
+      try { const d = await F.getDoc(F.doc(db, "files", r.slice(3))); if (d.exists()) localImg[r] = d.data().d; } catch (e) {}
+    }));
   }
 
   /* ---------- البداية ---------- */
-  function setConn(kind) {
-    const c = $("conn");
-    c.className = "chip" + (kind === "ok" ? " ok" : "");
-    c.innerHTML = kind === "ok" ? 'متصل<span class="long"> بـ GitHub</span> ✓' : kind === "wait" ? "جارٍ الاتصال…" : "غير متصل";
-  }
   function showLoading(msg, retry) {
-    hide("editor"); hide("dock"); hide("connectCard"); show("loadingCard");
+    hide("editor"); hide("dock"); hide("loginCard"); show("loadingCard");
     $("loadingMsg").textContent = msg;
     $("retryBtn").classList.toggle("hidden", !retry);
   }
-  function showConnect(msg) {
-    setConn("off");
-    hide("editor"); hide("dock"); hide("loadingCard"); show("connectCard");
-    $("connectMsg").textContent = msg || "";
-    $("tokenInput").value = "";
+  function showLogin(msg) {
+    hide("editor"); hide("dock"); hide("loadingCard"); show("loginCard"); hide("logoutBtn");
+    if (msg !== undefined) $("lgMsg").textContent = msg;
   }
   function fromConfig(cfg) {
     let boxes = [];
@@ -640,7 +639,7 @@
       if (ctx.close) ctx.close().catch(() => {});
       const isMp3 = /mpeg|mp3/i.test(file.type) || /\.mp3$/i.test(file.name);
       let data, ext, note = "";
-      if (isMp3 && file.size <= 1.5 * 1024 * 1024 && buf.duration <= MAX_SEC + 0.05) { data = await readAsDataURL(file); ext = "mp3"; data = "data:audio/mpeg;base64," + data.slice(data.indexOf(",") + 1); }
+      if (isMp3 && file.size <= 650 * 1024 && buf.duration <= MAX_SEC + 0.05) { data = await readAsDataURL(file); ext = "mp3"; data = "data:audio/mpeg;base64," + data.slice(data.indexOf(",") + 1); }
       else { data = "data:audio/wav;base64," + bytesToB64(await toWav(buf, MAX_SEC)); ext = "wav"; if (buf.duration > MAX_SEC + 0.05) note = "، وسيُستخدم أول 8 ثوانٍ منه فقط"; }
       pendingSound = { data, ext };
       $("sndName").value = file.name.replace(/\.[^.]+$/, "").slice(0, 30);
@@ -665,38 +664,96 @@
     renderSounds(); refreshBoxSounds(); changed();
     toast(`أُضيف «${name}» إلى الأصوات؛ اختره لكل الصناديق أو لصندوق معيّن`);
   });
+  let started = false, fb = null;
+  const isTeacherUser = (u) => u && !u.isAnonymous && (u.email || "").toLowerCase() === TEACHER;
   async function boot() {
     $("siteLink").value = SITE;
     if (navigator.share) show("shareLink");
-    if (!token) return showConnect();
-    setConn("wait");
+    showLoading("جارٍ التحميل…");
+    try { fb = await window.sanadeeqFB; }
+    catch (e) { showLoading("تعذّر الاتصال. تحقّق من الإنترنت ثم أعد المحاولة.", true); return; }
+    fb.A.getRedirectResult(fb.auth).catch(() => {});
+    fb.A.onAuthStateChanged(fb.auth, onUser);
+  }
+  async function onUser(u) {
+    if (!u || u.isAnonymous) { started = false; showLogin(); return; }
+    if (!isTeacherUser(u)) { showLogin(`الحساب ${u.email || ""} ليس حساب المعلم.`); fb.A.signOut(fb.auth); return; }
+    if (!u.emailVerified) { showLogin(); show("lgVerify"); return; }
+    hide("lgVerify"); show("logoutBtn");
+    if (started) return;
+    started = true;
     showLoading("جارٍ تحميل الصناديق…");
     try {
       const [cfg] = await Promise.all([readConfig(), loadLibrary()]);
+      await loadFsFiles(fsRefs(cfg));
       base = cfg || { version: 0 };
       state = fromConfig(cfg);
       dirty = false;
-      setConn("ok");
-      hide("loadingCard"); hide("connectCard"); show("editor"); show("dock");
+      hide("loadingCard"); hide("loginCard"); show("editor"); show("dock");
       renderAll();
       setStatus();
       offerDraft();
-    } catch (e) {
-      if (e.status === 401) return showConnect(explain(e));
-      setConn("off");
-      showLoading(explain(e), true);
-    }
+      window.dispatchEvent(new Event("sanadeeq:ready"));
+    } catch (e) { started = false; showLoading(explain(e), true); }
   }
-  $("retryBtn").addEventListener("click", boot);
-  $("saveToken").addEventListener("click", async () => {
-    const t = $("tokenInput").value.trim();
-    if (!t) { $("connectMsg").textContent = "الصق المفتاح أولاً."; return; }
-    $("connectMsg").textContent = "جارٍ التحقق…";
-    const old = token; token = t;
-    try { await gh(""); LS.set(K_TOKEN, t); boot(); }
-    catch (e) { token = old; $("connectMsg").textContent = explain(e); }
+  $("retryBtn").addEventListener("click", () => { if (fb && fb.auth.currentUser) { started = false; onUser(fb.auth.currentUser); } else boot(); });
+  const authMsg = (e) => {
+    const c = (e && e.code) || "";
+    if (/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)) return "البريد أو كلمة السر غير صحيحة. إن كانت أول مرة فاضغط «إنشاء الحساب».";
+    if (/email-already-in-use/.test(c)) return "الحساب موجود من قبل؛ اضغط «دخول»، أو «نسيت كلمة السر» إن نسيتها.";
+    if (/weak-password/.test(c)) return "كلمة السر قصيرة؛ اجعلها 6 أحرف على الأقل.";
+    if (/invalid-email/.test(c)) return "اكتب البريد الإلكتروني بشكل صحيح.";
+    if (/too-many-requests/.test(c)) return "محاولات كثيرة؛ انتظر قليلاً ثم أعد المحاولة.";
+    if (/network/.test(c)) return "تعذّر الاتصال. تحقّق من الإنترنت.";
+    if (/popup-closed|cancelled-popup/.test(c)) return "";
+    return "تعذّر الدخول (" + c + ").";
+  };
+  const lgEmail = () => $("lgEmail").value.trim().toLowerCase();
+  $("lgIn").addEventListener("click", async () => {
+    if (!fb) return;
+    $("lgMsg").textContent = "جارٍ الدخول…";
+    try { await fb.A.signInWithEmailAndPassword(fb.auth, lgEmail(), $("lgPass").value); $("lgMsg").textContent = ""; }
+    catch (e) { $("lgMsg").textContent = authMsg(e); }
   });
-  $("tokenInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("saveToken").click(); });
+  $("lgPass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("lgIn").click(); });
+  $("lgNew").addEventListener("click", async () => {
+    if (!fb) return;
+    if (lgEmail() !== TEACHER) { $("lgMsg").textContent = "هذه اللوحة لحساب المعلم فقط (" + TEACHER + ")."; return; }
+    try {
+      const cred = await fb.A.createUserWithEmailAndPassword(fb.auth, lgEmail(), $("lgPass").value);
+      await fb.A.sendEmailVerification(cred.user);
+      $("lgMsg").textContent = "أُنشئ الحساب ✓";
+      show("lgVerify");
+    } catch (e) { $("lgMsg").textContent = authMsg(e); }
+  });
+  $("lgForgot").addEventListener("click", async () => {
+    if (!fb) return;
+    try { await fb.A.sendPasswordResetEmail(fb.auth, lgEmail() || TEACHER); $("lgMsg").textContent = "أرسلنا إلى بريدك رابطاً لتغيير كلمة السر."; }
+    catch (e) { $("lgMsg").textContent = authMsg(e); }
+  });
+  $("lgGoogle").addEventListener("click", async () => {
+    if (!fb) return;
+    const p = new fb.A.GoogleAuthProvider(); p.setCustomParameters({ login_hint: TEACHER, prompt: "select_account" });
+    try { await fb.A.signInWithPopup(fb.auth, p); }
+    catch (e) {
+      if (/popup-blocked|operation-not-supported/.test(e.code || "")) fb.A.signInWithRedirect(fb.auth, p);
+      else $("lgMsg").textContent = authMsg(e);
+    }
+  });
+  $("lgCheck").addEventListener("click", async () => {
+    const u = fb && fb.auth.currentUser; if (!u) return;
+    await u.reload();
+    if (fb.auth.currentUser.emailVerified) { await fb.auth.currentUser.getIdToken(true); onUser(fb.auth.currentUser); }
+    else $("lgMsg").textContent = "لم يُفعَّل بعد. افتح رسالة التفعيل في بريدك (وانظر في الرسائل غير المرغوب فيها).";
+  });
+  $("lgResend").addEventListener("click", async () => {
+    const u = fb && fb.auth.currentUser; if (!u) return;
+    try { await fb.A.sendEmailVerification(u); $("lgMsg").textContent = "أُعيد إرسال رابط التفعيل."; } catch (e) { $("lgMsg").textContent = authMsg(e); }
+  });
+  $("logoutBtn").addEventListener("click", async () => {
+    if (dirty && !(await ask("لديك تعديلات لم تُنشر، وستبقى محفوظة على هذا الجهاز. هل تريد الخروج؟", "اخرج"))) return;
+    await fb.A.signOut(fb.auth); location.reload();
+  });
 
   /* ---------- العرض ---------- */
   function renderAll() { renderBoxes(); renderSounds(); renderBoards(); renderSettings(); renderLastPub(); }
@@ -777,7 +834,7 @@
   }
   async function setBoxImage(i, file) {
     try {
-      state.boxes[i].i = await compress(file, 1400, 0.85);
+      state.boxes[i].i = await compressFit(file, 1400, 0.85);
       const card = $("boxes").children[i];
       renderImgZone(card, i); boxState(card, state.boxes[i]); changed();
     } catch (e) { toast("تعذّرت قراءة الصورة. جرّب صورة بصيغة JPG أو PNG."); }
@@ -814,7 +871,7 @@
     const pcm = new Int16Array(ch.length);
     for (let i = 0; i < ch.length; i++) { const v = Math.max(-1, Math.min(1, ch[i] * gain)); pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff; }
     try {
-      const lame = await loadLame(), enc = new lame.Mp3Encoder(1, sr, 64), parts = [];
+      const lame = await loadLame(), enc = new lame.Mp3Encoder(1, sr, 32), parts = [];
       for (let i = 0; i < pcm.length; i += 1152) { const o = enc.encodeBuffer(pcm.subarray(i, i + 1152)); if (o.length) parts.push(new Uint8Array(o)); }
       const end = enc.flush(); if (end.length) parts.push(new Uint8Array(end));
       const total = parts.reduce((n, p) => n + p.length, 0), all = new Uint8Array(total);
@@ -921,7 +978,7 @@
     add.className = "add-tile";
     add.innerHTML = "<b>+</b>إضافة صورة صناديق جديدة";
     add.addEventListener("click", () => pickFile(async (f) => {
-      try { openHotspots({ id: "b" + Date.now().toString(36), src: await compress(f, 1800, 0.86), numbered: true, rects: [] }, true); }
+      try { openHotspots({ id: "b" + Date.now().toString(36), src: await compressFit(f, 1800, 0.86), numbered: true, rects: [] }, true); }
       catch (e) { toast("تعذّرت قراءة الصورة. جرّب صورة بصيغة JPG أو PNG."); }
     }));
     wrap.appendChild(add);
@@ -1152,27 +1209,29 @@
         if (!(await ask("نُشرت تعديلات أخرى على الصناديق (ربما من جهاز آخر) بعد أن فتحت هذه الصفحة. هل تريد استبدالها بما أمامك الآن؟", "استبدلها"))) { setStatus(); return; }
       }
       const version = Date.now(), files = [];
+      const newRef = (data) => {
+        if (data.length > MAX_FILE) { const err = new Error("too big"); err.code = "too-big"; throw err; }
+        const id = "f" + version.toString(36) + files.length.toString(36) + Math.random().toString(36).slice(2, 6);
+        files.push({ id, ref: "fs:" + id, data });
+        return "fs:" + id;
+      };
       const boards = state.boards.map((b) => {
         const o = { id: b.id, src: b.src, numbered: b.numbered !== false, rects: b.rects.map((r) => r.slice()) };
-        if (isData(b.src)) { o.src = `boards/${b.id}.jpg`; files.push({ path: o.src, b64: dataB64(b.src), data: b.src }); }
+        if (isData(b.src)) o.src = newRef(b.src);
         return o;
       });
-      // الأصوات المرفوعة من الجهاز تُحفظ في sounds/custom-… وتُستبدل مراجعها بالمسار الجديد
+      // الأصوات المرفوعة من الجهاز تُحفظ في قاعدة البيانات وتُستبدل مراجعها
       const soundPath = {};
       const customSounds = state.customSounds.map((c) => {
         const o = { id: c.id, name: c.name, src: c.src };
-        if (isData(c.src)) {
-          o.src = `sounds/custom-${c.id}.${c.ext || (c.src.startsWith("data:audio/wav") ? "wav" : "mp3")}`;
-          files.push({ path: o.src, b64: dataB64(c.src), data: c.src });
-          soundPath[c.src] = o.src;
-        }
+        if (isData(c.src)) { o.src = newRef(c.src); soundPath[c.src] = o.src; }
         return o;
       });
-      const mapS = (s) => (s && soundPath[s]) || s || "";
-      const boxes = state.boxes.map((b, k) => {
+      const mapS = (x) => (x && soundPath[x]) || x || "";
+      const boxes = state.boxes.map((b) => {
         const o = { t: b.t.replace(/\s+$/, ""), i: b.i || "", s: b.s === "none" ? "none" : mapS(b.s), v: b.v || "" };
-        if (isData(b.i)) { o.i = `media/${version}-${k + 1}.jpg`; files.push({ path: o.i, b64: dataB64(b.i), data: b.i }); }
-        if (isData(b.v)) { o.v = `media/${version}-${k + 1}-voice.${b.v.startsWith("data:audio/wav") ? "wav" : "mp3"}`; files.push({ path: o.v, b64: dataB64(b.v), data: b.v }); }
+        if (isData(b.i)) o.i = newRef(b.i);
+        if (isData(b.v)) o.v = newRef(b.v);
         return o;
       });
       const cfg = {
@@ -1180,11 +1239,13 @@
         board: state.board, boards, sound: mapS(state.sound), finale: mapS(state.finale), customSounds, sections: state.sections.slice(),
         secret: b64Utf8(JSON.stringify(boxes))
       };
-      files.push({ path: "config.json", b64: b64Utf8(JSON.stringify(cfg, null, 1)) });
-      const keep = new Set(boards.map((b) => b.src).concat(boxes.map((b) => b.i).filter(Boolean), boxes.map((b) => b.v).filter(Boolean), customSounds.map((c) => c.src)));
-      const stale = (tree) => tree.filter((e) => e.type === "blob" && /^(media\/|boards\/|sounds\/custom-)/.test(e.path) && !keep.has(e.path)).map((e) => e.path);
-      await commit(files, stale, "تحديث الصناديق السرية");
-      files.forEach((f) => { if (f.data) localImg[f.path] = f.data; });
+      const { F, db } = await window.sanadeeqFB;
+      for (const f of files) await F.setDoc(F.doc(db, "files", f.id), { d: f.data });
+      await F.setDoc(F.doc(db, "site", "config"), { json: JSON.stringify(cfg), version });
+      // حذف الملفات التي لم تعد مستخدمة
+      const keep = new Set(fsRefs(cfg));
+      for (const r of fsRefs(base)) if (!keep.has(r)) { try { await F.deleteDoc(F.doc(db, "files", r.slice(3))); } catch (e) {} }
+      files.forEach((f) => { localImg[f.ref] = f.data; });
       base = cfg;
       state.boards = clone(boards);
       state.boxes = boxes.map((b) => ({ t: b.t, i: b.i, s: b.s, v: b.v }));
@@ -1192,12 +1253,10 @@
       state.sound = cfg.sound; state.finale = cfg.finale;
       dirty = false; LS.del(K_DRAFT);
       renderAll();
-      setStatus("ok", "✓ تم النشر — يصل للطلاب خلال دقيقة تقريباً…");
+      setStatus("ok", "✓ تم النشر — الطلاب يرون الصناديق الجديدة الآن");
       window.dispatchEvent(new Event("sanadeeq:published"));
-      watchLive(version);
     } catch (e) {
       setStatus("err", "✗ " + explain(e));
-      if (e.status === 401) toast("اربط الجهاز بمفتاح جديد ثم انشر");
     } finally {
       publishing = false; setBusy(false);
     }
@@ -1207,66 +1266,24 @@
     if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) { e.preventDefault(); if (state) publish(); }
     if (e.key === "Escape") { hide("hsModal"); hide("qfModal"); hide("imgModal"); if (!$("sndModal").classList.contains("hidden")) $("sndCancel").click(); }
   });
-  let watchT;
-  function watchLive(v) {
-    clearTimeout(watchT);
-    const t0 = Date.now();
-    const poll = async () => {
-      try {
-        const r = await fetch("config.json?t=" + Date.now(), { cache: "no-store" });
-        if (r.ok && (await r.json()).version === v) {
-          if (!dirty) setStatus("ok", "✓ وصل التحديث — الطلاب يرون الصناديق الجديدة الآن");
-          toast("وصل التحديث للطلاب ✓");
-          return;
-        }
-      } catch (e) {}
-      if (Date.now() - t0 < 4 * 60 * 1000) watchT = setTimeout(poll, 6000);
-      else if (!dirty) setStatus("ok", "✓ تم النشر، وقد يتأخر ظهوره دقائق قليلة");
-    };
-    watchT = setTimeout(poll, 4000);
-  }
-
   boot();
 })();
 </script>
 <script type="module">
 // قسم «الطلاب الذين دخلوا»: يقرأ سجلات الطلاب من Firebase (مشروع sanadeeq) — لا يراها إلا حساب المعلم
-const FB = {
-  apiKey: "AIzaSyBPvtM0azYwbAgPfBu8WROT5SJgB7Uk9go", authDomain: "sanadeeq-eba14.firebaseapp.com", projectId: "sanadeeq-eba14",
-  storageBucket: "sanadeeq-eba14.firebasestorage.app", messagingSenderId: "363973827345", appId: "1:363973827345:web:2fa5e49111ca4d247b8ab0"
-};
 const TEACHER = "abdullah2006adigm@gmail.com";
-const CDN = "https://www.gstatic.com/firebasejs/10.12.2/";
 const $ = (id) => document.getElementById(id);
 let A, F, auth, db, unsub = null, visits = [], round = "", secFilter = "";
 const fmt = new Intl.DateTimeFormat("ar", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" });
 const fmtShort = new Intl.DateTimeFormat("ar", { weekday: "short", hour: "numeric", minute: "2-digit" });
 const toDate = (t) => (t && t.toDate ? t.toDate() : null);
 try {
-  const [{ initializeApp }, a, f] = await Promise.all([import(CDN + "firebase-app.js"), import(CDN + "firebase-auth.js"), import(CDN + "firebase-firestore.js")]);
-  A = a; F = f;
-  const app = initializeApp(FB); auth = A.getAuth(app); db = F.getFirestore(app);
-  A.getRedirectResult(auth).catch(() => {});
+  ({ A, F, auth, db } = await window.sanadeeqFB);
   A.onAuthStateChanged(auth, (u) => {
-    const ok = u && !u.isAnonymous && (u.email || "").toLowerCase() === TEACHER;
-    $("stSignedOut").classList.toggle("hidden", !!ok);
-    $("stSignedIn").classList.toggle("hidden", !ok);
-    if (u && !u.isAnonymous && !ok) { $("stMsg").textContent = `الحساب ${u.email} لا يملك صلاحية عرض الأسماء. ادخل بحساب ${TEACHER}.`; A.signOut(auth); }
-    if (ok) { $("stWho").textContent = "داخل بحساب " + u.email; listen(); }
-    else if (unsub) { unsub(); unsub = null; }
+    const ok = u && !u.isAnonymous && u.emailVerified && (u.email || "").toLowerCase() === TEACHER;
+    if (ok) listen(); else if (unsub) { unsub(); unsub = null; }
   });
 } catch (e) { $("stMsg").textContent = "تعذّر الاتصال بقاعدة البيانات. تحقق من الإنترنت ثم أعد تحميل الصفحة."; }
-
-$("stSignIn").addEventListener("click", async () => {
-  if (!auth) return;
-  const p = new A.GoogleAuthProvider(); p.setCustomParameters({ login_hint: TEACHER, prompt: "select_account" });
-  try { await A.signInWithPopup(auth, p); }
-  catch (e) {
-    if (e && /popup-blocked|operation-not-supported|popup-closed-by-browser/.test(e.code || "")) A.signInWithRedirect(auth, p);
-    else if (e && e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") $("stMsg").textContent = "تعذّر الدخول: " + (e.code || e.message);
-  }
-});
-$("stSignOut").addEventListener("click", () => auth && A.signOut(auth));
 
 function listen() {
   if (unsub) return;
@@ -1356,6 +1373,7 @@ $("stDelOld").addEventListener("click", () => {
   removeVisits(visits.filter((v) => String(v.version) !== current), "سجل كل الجولات السابقة (وتبقى الحالية)");
 });
 window.addEventListener("sanadeeq:published", () => { round = ""; if (unsub) render(); });
+window.addEventListener("sanadeeq:ready", () => { if (unsub) render(); });
 </script>
 </body>
 </html>
