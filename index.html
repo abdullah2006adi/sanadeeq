@@ -354,17 +354,29 @@
       Object.keys(bytes).forEach(decode);
     }
     // يعيد مقبضاً يمكن به إيقاف الصوت تدريجياً
-    function play(src) {
-      if (!src) return null;
+    // onEnd: يُستدعى مرة واحدة حين ينتهي الصوت أو يتعذّر تشغيله
+    function play(src, onEnd) {
+      if (!src) { if (onEnd) onEnd(); return null; }
+      let ended = false; const done = () => { if (!ended) { ended = true; if (onEnd) onEnd(); } };
       const b = buffers[src];
       if (ctx && ctx.state !== "running") ctx.resume().catch(() => {});
       if (ctx && ctx.state === "running" && b && b !== "loading") {
         if (ctx.state !== "running") ctx.resume().catch(() => {});
         const s = ctx.createBufferSource(), g = ctx.createGain();
         s.buffer = b; s.connect(g); g.connect(ctx.destination); s.start(0);
+        if (onEnd) { s.onended = done; setTimeout(done, (b.duration + 2) * 1000); }   // احتياط إن لم يصل حدث النهاية
         return { stop(fade) { try { const t = ctx.currentTime; g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + (fade || 0.05)); s.stop(t + (fade || 0.05) + 0.02); } catch (e) {} } };
       }
-      try { const a = new Audio(asset(src)); a.play().catch(() => {}); return { stop() { try { a.pause(); } catch (e) {} } }; } catch (e) { return null; }   // احتياط إن لم يكتمل التحميل
+      try {   // احتياط إن لم يكتمل التحميل
+        const a = new Audio(asset(src));
+        if (onEnd) {
+          a.addEventListener("ended", done); a.addEventListener("error", done);
+          a.addEventListener("loadedmetadata", () => { if (isFinite(a.duration)) setTimeout(done, (a.duration + 2) * 1000); });
+          setTimeout(done, 130000);
+        }
+        a.play().catch(done);
+        return { stop() { try { a.pause(); } catch (e) {} } };
+      } catch (e) { done(); return null; }
     }
     // كل لمسة تعيد تشغيل الصوت إن أوقفه النظام (قفل الشاشة، مكالمة، الانتقال لتطبيق آخر)
     ["pointerdown", "touchend", "click", "keydown"].forEach((t) => document.addEventListener(t, () => { if (ctx || bytes && Object.keys(bytes).length) unlock(); }, { capture: true, passive: true }));
@@ -684,13 +696,19 @@
   }
 
   let timer = null, remaining = 0, total = 0, lastTick = 0, current = -1, openSound = null, voice = null;
+  let voiceToken = 0, listening = false, afterVoice = 0;
   function playVoice() {
     const v = String((boxes[current] || {}).v || "");
+    const my = ++voiceToken;
     if (voice) voice.stop(0.1);
     voice = null;
     if (!v) return;
     if (openSound) { openSound.stop(0.35); openSound = null; }   // يخفت صوت الفتح ليُسمع التعليق بوضوح
-    voice = Sound.play(v);
+    voice = Sound.play(v, () => {
+      if (my !== voiceToken || !listening) return;               // أُعيد التشغيل أو أُغلق الصندوق
+      listening = false;
+      startCountdown(afterVoice);
+    });
   }
   function showSecret(i, place) {
     current = i;
@@ -720,14 +738,31 @@
     $("secretModal").classList.add("on");
     $("secretModal").querySelector(".card").scrollTop = 0;
     burst(false);
+    clearTimeout(timer);
+    const setting = Math.max(0, Math.min(600, Number(cfg.wait ?? 10) || 0));
+    listening = false;
+    if (already || empty) { playVoice(); return finishWait(); }
+    const b = $("closeBtn"); b.disabled = true;
+    $("skipBtn").classList.toggle("hidden", !PREVIEW);
+    if (hasVoice) {
+      // العدّ يبدأ بعد أن ينتهي التعليق الصوتي، بالمدة التي اختارها المعلم
+      listening = true; afterVoice = setting;
+      $("ring").classList.add("hidden");
+      b.textContent = "استمع للتعليق…";
+      $("waitNote").textContent = "🔊 يبدأ العدّ بعد انتهاء التعليق الصوتي";
+      playVoice();
+      return;
+    }
     playVoice();
-
-    const wait = already || empty ? 0 : Math.max(0, Math.min(600, Number(cfg.wait ?? 10) || 0));
+    startCountdown(setting > 0 ? 5 : 0);     // بلا تعليق صوتي: خمس ثوانٍ
+  }
+  function startCountdown(wait) {
     clearTimeout(timer);
     if (wait <= 0) return finishWait();
+    const b = $("closeBtn"); b.disabled = true;
     total = wait * 1000; remaining = total; lastTick = performance.now();
     $("ring").classList.remove("hidden");
-    const b = $("closeBtn"); b.disabled = true; b.textContent = "اقرأ جيداً…";
+    b.textContent = "اقرأ جيداً…";
     $("waitNote").textContent = `يمكنك الانتقال بعد ${wait} ${wait === 1 ? "ثانية" : wait === 2 ? "ثانيتين" : wait <= 10 ? "ثوانٍ" : "ثانية"}`;
     $("skipBtn").classList.toggle("hidden", !PREVIEW);
     tick();
@@ -742,7 +777,7 @@
     if (left <= 0) finishWait(); else timer = setTimeout(tick, 100);
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) lastTick = performance.now(); });
-  $("skipBtn").addEventListener("click", () => { remaining = 0; });
+  $("skipBtn").addEventListener("click", () => { if (listening) { listening = false; finishWait(); } else remaining = 0; });
 
   function finishWait() {
     clearTimeout(timer);
@@ -763,6 +798,7 @@
   function closeSecret() {
     if ($("closeBtn").disabled) return;
     $("secretModal").classList.remove("on");
+    listening = false; voiceToken++;
     if (voice) { voice.stop(0.25); voice = null; }
     busy = false;
     refresh();
