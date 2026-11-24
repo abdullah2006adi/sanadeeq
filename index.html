@@ -748,8 +748,8 @@
       // العدّ يبدأ بعد أن ينتهي التعليق الصوتي، بالمدة التي اختارها المعلم
       listening = true; afterVoice = setting;
       $("ring").classList.add("hidden");
-      b.textContent = "استمع للتعليق…";
-      $("waitNote").textContent = "🔊 يبدأ العدّ بعد انتهاء التعليق الصوتي";
+      b.classList.add("hidden");              // لا زر ولا عبارة أثناء التعليق الصوتي
+      $("waitNote").textContent = "";
       playVoice();
       return;
     }
@@ -759,7 +759,7 @@
   function startCountdown(wait) {
     clearTimeout(timer);
     if (wait <= 0) return finishWait();
-    const b = $("closeBtn"); b.disabled = true;
+    const b = $("closeBtn"); b.disabled = true; b.classList.remove("hidden");
     total = wait * 1000; remaining = total; lastTick = performance.now();
     $("ring").classList.remove("hidden");
     b.textContent = "اقرأ جيداً…";
@@ -790,7 +790,7 @@
     $("skipBtn").classList.add("hidden");
     const all = seen.length >= spots.length;
     const b = $("closeBtn");
-    b.disabled = false;
+    b.disabled = false; b.classList.remove("hidden");
     b.textContent = all ? "تم ✓" : cfg.order ? "إلى الصندوق التالي ←" : "تم ✓ اختر صندوقاً آخر";
     b.focus({ preventScroll: true });
     refresh();
