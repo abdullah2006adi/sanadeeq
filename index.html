@@ -78,22 +78,23 @@
   @media (max-width:359px){.fields{grid-template-columns:1fr}}
 
   /* ===== لوحة الصناديق ===== */
-  #playScreen{justify-content:center}
-  .top{width:var(--bw);display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-bottom:8px}
+  /* الصناديق تملأ الشاشة، والشريط العلوي فوقها */
+  #playScreen.on{position:fixed;inset:0;display:block;padding:0;min-height:0;overflow:hidden;z-index:2}
+  .stage{position:absolute;inset:0;overflow:hidden;background:#070b24}
+  .stage-bg{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;filter:blur(22px) brightness(.5) saturate(1.1);pointer-events:none}
+  .hud{position:absolute;top:0;left:0;right:0;z-index:3;padding:max(8px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 18px max(14px,env(safe-area-inset-left));
+    background:linear-gradient(180deg,#060a26f0 0%,#060a26c0 60%,#060a2600 100%);pointer-events:none}
+  .hud>*{pointer-events:auto}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:6px 16px;flex-wrap:wrap}
   .hello{font-size:clamp(18px,4.6vw,26px);font-weight:800}
   .hello b{color:var(--gold-2)}
   .top-end{display:flex;align-items:center;gap:8px}
-  .mute{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid #ffffff2e;background:#ffffff14;
-    font-size:19px;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s}
-  .mute:hover{background:#ffffff26}
-  .mute.off{opacity:.7}
   .pill{display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:99px;background:#ffffff14;border:1px solid #ffffff26;font-weight:800;font-size:15px}
   .bar{width:110px;height:10px;border-radius:9px;background:#ffffff26;overflow:hidden}
   .bar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#f5b52e,#ffe08a);transition:width .7s cubic-bezier(.2,.8,.2,1)}
-  .sub{width:var(--bw);min-height:1.6em;margin-bottom:10px;text-align:center;font-weight:800;color:var(--gold-2);font-size:clamp(15px,3.9vw,19px)}
-  .board{position:relative;width:var(--bw);border-radius:18px;overflow:hidden;background:#0b1030;
-    box-shadow:0 26px 70px #000b,0 0 0 2px #f5c45155;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-  .board>img{display:block;width:100%;height:auto;pointer-events:none}
+  .sub{min-height:1.5em;margin:4px 0 0;text-align:center;text-shadow:0 2px 8px #000;font-weight:800;color:var(--gold-2);font-size:clamp(15px,3.9vw,19px)}
+  .board{position:absolute;left:0;top:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;box-shadow:0 0 60px #000a}
+  .board>img{display:block;width:100%;height:100%;pointer-events:none}
   .spot{position:absolute;border:0;padding:0;background:transparent;border-radius:12%;cursor:pointer;
     -webkit-tap-highlight-color:transparent;transition:transform .25s,box-shadow .25s,background-color .25s}
   .spot.live{animation:breathe 3.4s ease-in-out infinite;animation-delay:var(--d,0s)}
@@ -115,13 +116,13 @@
   .spot .num{position:absolute;top:-4%;left:50%;transform:translateX(-50%);min-width:1.9em;padding:.08em .45em;border-radius:99px;
     font:900 clamp(11px,2.2vw,24px)/1.35 'Tajawal',sans-serif;color:#3a2300;background:linear-gradient(180deg,#ffe7a0,#f0a91f);
     border:2px solid #fff8;box-shadow:0 3px 10px #0009}
-  .rotate-tip{display:none;margin-top:12px;font-size:14px;color:var(--muted)}
-  @media (max-width:640px) and (orientation:portrait){.rotate-tip{display:block}}
-  .done{margin-top:16px;padding:12px 22px;border-radius:18px;text-align:center;font-weight:900;font-size:clamp(18px,4.6vw,24px);
+  .rotate-tip{display:none;position:absolute;bottom:max(10px,env(safe-area-inset-bottom));left:0;right:0;z-index:3;text-align:center;font-size:14px;color:var(--muted);text-shadow:0 2px 6px #000}
+  .no-tall .rotate-tip{display:block}
+  .done{position:absolute;z-index:3;bottom:max(14px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:92vw;padding:12px 22px;border-radius:18px;text-align:center;font-weight:900;font-size:clamp(18px,4.6vw,24px);
     color:#c8ffd1;background:#0e3b2266;border:1.5px solid #7ee08f66}
   @media (max-height:520px) and (orientation:landscape){
     .screen{padding-top:8px;padding-bottom:10px}
-    .top{margin-bottom:4px}.hello{font-size:18px}.sub{font-size:14px;margin-bottom:6px}.rotate-tip{display:none}
+    .hello{font-size:17px}.sub{font-size:14px}.hud{padding-bottom:10px}
   }
 
   /* ===== الصندوق المفتوح ===== */
@@ -198,17 +199,20 @@
 </section>
 
 <section class="screen" id="playScreen">
-  <div class="top" id="top">
-    <div class="hello">أهلاً يا <b id="helloName"></b> 👋</div>
-    <div class="top-end">
-      <div class="pill"><span id="progTxt">فتحت 0 من 10</span><div class="bar"><i id="progBar"></i></div></div>
-      <button class="mute hidden" id="muteBtn" type="button" aria-label="كتم الصوت" title="كتم الصوت">🔊</button>
-    </div>
+  <div class="stage" id="stage">
+    <img class="stage-bg" id="stageBg" alt="">
+    <div class="board" id="board"><img id="boardImg" alt="الصناديق العشرة"></div>
   </div>
-  <p class="sub" id="sub"></p>
-  <div class="board" id="board"><img id="boardImg" alt="الصناديق العشرة"></div>
-  <p class="rotate-tip">📱 أدر الهاتف بالعرض لتظهر الصناديق أكبر</p>
-  <p class="done hidden" id="doneMsg"></p>
+  <div class="hud" id="hud">
+    <div class="top" id="top">
+      <div class="hello">أهلاً يا <b id="helloName"></b> 👋</div>
+      <div class="top-end">
+        <div class="pill"><span id="progTxt">فتحت 0 من 10</span><div class="bar"><i id="progBar"></i></div></div>
+      </div>
+    </div>
+    <p class="sub" id="sub"></p>
+  </div>
+  <p class="rotate-tip" id="rotateTip">📱 أدر الهاتف بالعرض لتظهر الصناديق أكبر</p>
 </section>
 
 <div class="modal" id="secretModal" role="dialog" aria-modal="true" aria-labelledby="ribbon">
@@ -311,7 +315,16 @@
     const AC = window.AudioContext || window.webkitAudioContext;
     let ctx = null;
     const bytes = {}, buffers = {};
-    let muted = !!store.get("sanadeeq:muted", false);
+    try { localStorage.removeItem("sanadeeq:muted"); } catch (e) {}
+    const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    let keep = null;   // آيفون قديم: صوت صامت يمنع زر الوضع الصامت من كتم أصوات الصفحة
+    function silentWav() {
+      const n = 4410, b = new ArrayBuffer(44 + n), v = new DataView(b), w = (o, t) => [...t].forEach((c, k) => v.setUint8(o + k, c.charCodeAt(0)));
+      w(0, "RIFF"); v.setUint32(4, 36 + n, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, 44100, true); v.setUint32(28, 44100, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, "data"); v.setUint32(40, n, true);
+      for (let k = 0; k < n; k++) v.setUint8(44 + k, 128);
+      return URL.createObjectURL(new Blob([b], { type: "audio/wav" }));
+    }
     function prefetch(src) {
       if (!src || bytes[src]) return;
       bytes[src] = fetch(asset(src)).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
@@ -327,8 +340,14 @@
     }
     // يُستدعى عند ضغطة الطالب على «اكتشف الأسرار» لأن المتصفحات لا تسمح بالصوت قبل لمسة من المستخدم
     function unlock() {
+      try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) {}
+      if (IOS && !navigator.audioSession && document.visibilityState === "visible") {
+        try {
+          if (!keep) { keep = new Audio(silentWav()); keep.loop = true; keep.setAttribute("playsinline", ""); keep.setAttribute("x-webkit-airplay", "deny"); }
+          if (keep.paused) keep.play().catch(() => {});
+        } catch (e) {}
+      }
       if (!AC) return;
-      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
       if (!ctx) { try { ctx = new AC(); } catch (e) { ctx = null; return; } }
       if (ctx.state !== "running") ctx.resume().catch(() => {});
       try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0); } catch (e) {}
@@ -336,9 +355,10 @@
     }
     // يعيد مقبضاً يمكن به إيقاف الصوت تدريجياً
     function play(src) {
-      if (muted || !src) return null;
+      if (!src) return null;
       const b = buffers[src];
-      if (ctx && b && b !== "loading") {
+      if (ctx && ctx.state !== "running") ctx.resume().catch(() => {});
+      if (ctx && ctx.state === "running" && b && b !== "loading") {
         if (ctx.state !== "running") ctx.resume().catch(() => {});
         const s = ctx.createBufferSource(), g = ctx.createGain();
         s.buffer = b; s.connect(g); g.connect(ctx.destination); s.start(0);
@@ -346,11 +366,10 @@
       }
       try { const a = new Audio(asset(src)); a.play().catch(() => {}); return { stop() { try { a.pause(); } catch (e) {} } }; } catch (e) { return null; }   // احتياط إن لم يكتمل التحميل
     }
-    return {
-      prefetch, unlock, play,
-      get muted() { return muted; },
-      toggle() { muted = !muted; store.set("sanadeeq:muted", muted); return muted; }
-    };
+    // كل لمسة تعيد تشغيل الصوت إن أوقفه النظام (قفل الشاشة، مكالمة، الانتقال لتطبيق آخر)
+    ["pointerdown", "touchend", "click", "keydown"].forEach((t) => document.addEventListener(t, () => { if (ctx || bytes && Object.keys(bytes).length) unlock(); }, { capture: true, passive: true }));
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && keep) try { keep.pause(); } catch (e) {} });
+    return { prefetch, unlock, play };
   })();
   const defaultSound = () => (cfg && "sound" in cfg ? cfg.sound || "" : "sounds/sparkle.mp3");
   const finaleSound = () => (cfg && "finale" in cfg ? cfg.finale || "" : "sounds/celebrate.mp3");
@@ -358,21 +377,17 @@
     const s = (boxes[i] || {}).s;
     return s === "none" ? "" : s || defaultSound();
   }
-  function renderMute() {
-    const b = $("muteBtn"), m = Sound.muted;
-    b.textContent = m ? "🔇" : "🔊";
-    b.classList.toggle("off", m);
-    b.title = m ? "تشغيل الصوت" : "كتم الصوت";
-    b.setAttribute("aria-label", b.title);
-  }
-  $("muteBtn").addEventListener("click", () => { Sound.toggle(); renderMute(); if (!Sound.muted) Sound.unlock(); });
 
-  // الصناديق الجاهزة رُقّمت من اليمين لليسار: صورة جديدة وترتيب أماكن معكوس في كل صف
+  // الصناديق الجاهزة رُقّمت من اليمين لليسار، ولكل منها نسخة طولية للجوال
+  const TALL = {"1":[[57.0,6.89,36.0,11.78],[7.51,6.89,35.59,11.78],[57.38,25.79,35.06,11.78],[6.88,25.79,35.9,11.78],[56.94,44.69,36.16,11.78],[6.73,44.64,36.62,12.12],[57.22,63.54,36.1,12.12],[6.82,63.54,35.9,12.12],[57.13,82.43,36.21,12.12],[7.08,82.43,35.85,12.12]],"2":[[52.36,12.19,42.99,14.48],[4.85,12.19,41.93,14.48],[52.36,28.41,42.99,14.48],[4.85,28.41,41.93,14.48],[52.36,44.64,42.99,14.48],[4.85,44.64,41.93,14.48],[52.36,60.87,42.99,14.48],[4.85,60.87,41.93,14.48],[52.37,77.1,45.38,15.45],[2.47,77.1,45.12,15.45]],"3":[[52.92,7.75,42.75,14.52],[6.08,7.75,40.3,14.52],[52.92,23.92,42.75,14.52],[6.08,23.92,40.3,14.52],[52.92,40.1,42.75,14.52],[6.08,40.1,40.3,14.52],[52.92,56.27,42.75,14.52],[6.08,56.27,40.3,14.52],[52.81,72.47,45.48,15.74],[3.8,72.47,42.75,15.74]],"4":[[51.23,5.62,45.48,16.17],[4.41,5.62,43.61,16.17],[51.23,23.3,45.48,16.17],[4.41,23.3,43.61,16.17],[51.23,40.98,45.48,16.17],[4.41,40.98,43.61,16.17],[51.23,58.67,45.48,16.17],[4.41,58.67,43.61,16.17],[51.55,76.33,47.89,17.57],[2.33,76.33,45.48,17.57]],"5":[[51.64,13.14,45.2,14.04],[4.1,13.14,43.37,14.04],[51.64,28.33,45.2,14.04],[4.1,28.33,43.37,14.04],[51.64,43.53,45.2,14.04],[4.1,43.53,43.37,14.04],[51.64,58.72,45.2,14.04],[4.1,58.72,43.37,14.04],[51.91,73.91,46.24,15.39],[2.54,73.91,44.94,15.39]]};
   function rtlBoards(list) {
     return (list || []).map((b) => {
-      const m = /^boards\/board([1-5])\.jpg$/.exec((b && b.src) || "");
+      const m = /^boards\/board([1-5])(-rtl)?\.jpg$/.exec((b && b.src) || "");
       if (!m || !Array.isArray(b.rects) || b.rects.length !== 10) return b;
-      return Object.assign({}, b, { src: "boards/board" + m[1] + "-rtl.jpg", rects: b.rects.slice(0, 5).reverse().concat(b.rects.slice(5).reverse()) });
+      const o = Object.assign({}, b);
+      if (!m[2]) { o.src = "boards/board" + m[1] + "-rtl.jpg"; o.rects = b.rects.slice(0, 5).reverse().concat(b.rects.slice(5).reverse()); }
+      if (!o.tall) o.tall = { src: "boards/board" + m[1] + "-tall.jpg", rects: TALL[m[1]] };
+      return o;
     });
   }
   // ترتيب عشوائي لمحتويات الصناديق: يتغير كل مرة تُفتح الصفحة ويختلف من طالب لآخر
@@ -383,7 +398,7 @@
     return a;
   }
   async function start() {
-    if (PREVIEW) { $("previewBanner").classList.remove("hidden"); document.body.style.paddingTop = "30px"; }
+    if (PREVIEW) { $("previewBanner").classList.remove("hidden"); document.body.style.paddingTop = "30px"; $("playScreen").style.top = "30px"; }
     try {
       cfg = await getConfig();
       cfg.boards = rtlBoards(cfg.boards);
@@ -400,7 +415,8 @@
       $("gateTitle").textContent = title;
       $("gateTitle").classList.toggle("hidden", title === "الصناديق السرية");
       $("bg").style.backgroundImage = `url("${asset(board.src)}")`;
-      $("boardImg").src = asset(board.src); // تحميل مسبق أثناء كتابة الاسم
+      setLayout();                         // تحميل مسبق أثناء كتابة الاسم
+      [board.src, board.tall && board.tall.src].filter(Boolean).forEach((u) => { new Image().src = asset(u); });
       if (PREVIEW) { $("n1").value = "طالب"; $("n2").value = "تجريبي"; $("n3").value = "للمعاينة"; }
       renderSections();
       // اسم الطالب وشعبته من المرة السابقة على هذا الجهاز (إلا إذا حذفه)
@@ -414,8 +430,6 @@
       // تنزيل الأصوات المستخدمة فقط أثناء كتابة الطالب اسمه
       const used = new Set(boxes.map((b, i) => boxSound(i)).concat(finaleSound(), boxes.map((b) => b.v || "")).filter(Boolean));
       used.forEach(Sound.prefetch);
-      $("muteBtn").classList.toggle("hidden", used.size === 0);
-      renderMute();
       show("gateScreen");
       setTimeout(() => { if (!matchMedia("(pointer:coarse)").matches) $("n1").focus(); }, 60);
     } catch (e) {
@@ -551,12 +565,13 @@
       s.type = "button";
       s.className = "spot";
       s.setAttribute("aria-label", "الصندوق " + (i + 1));
-      s.style.cssText = `left:${r[0]}%;top:${r[1]}%;width:${r[2]}%;height:${r[3]}%;--d:${(i * 0.31).toFixed(2)}s`;
+      s.style.setProperty("--d", (i * 0.31).toFixed(2) + "s");
       s.innerHTML = (board.numbered ? "" : `<span class="num">${i + 1}</span>`) + '<span class="tick">✓</span><span class="lock">' + LOCK_SVG + "</span>";
       s.addEventListener("click", () => openBox(i));
       holder.appendChild(s);
       spots.push(s);
     });
+    placeSpots();
     refresh();
   }
   const nextInOrder = () => { for (let i = 0; i < spots.length; i++) if (!seen.includes(content(i))) return i; return -1; };
@@ -583,18 +598,58 @@
     }
   }
 
+  /* ---------- ملء الشاشة بالعرض أو بالطول ---------- */
+  let layout = null;                                  // {src, rects} المستعمل الآن
+  function wantLayout() {
+    const tall = board.tall && board.tall.src && window.innerHeight > window.innerWidth * 1.05;   // الجوال واقف
+    return tall ? board.tall : { src: board.src, rects: board.rects || [] };
+  }
+  function placeSpots() {
+    const rects = (layout || wantLayout()).rects || [];
+    spots.forEach((s, i) => { const r = rects[i] || [0, 0, 0, 0]; Object.assign(s.style, { left: r[0] + "%", top: r[1] + "%", width: r[2] + "%", height: r[3] + "%" }); });
+  }
+  function setLayout() {
+    const L = wantLayout();
+    $("playScreen").classList.toggle("no-tall", !board.tall && window.innerHeight > window.innerWidth && window.innerWidth < 700);
+    if (layout && layout.src === L.src) return false;
+    layout = L;
+    const src = asset(L.src);
+    if ($("boardImg").getAttribute("src") !== src) $("boardImg").src = src;
+    $("stageBg").src = src;
+    placeSpots();
+    return true;
+  }
+  // يكبّر الصورة لتغطي الشاشة، لكن دون أن يقصّ أي صندوق أو يخفيه تحت الشريط العلوي
   function fit() {
-    const img = $("boardImg");
-    const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 16 / 9;
-    const reserved = $("top").offsetHeight + $("sub").offsetHeight + (PREVIEW ? 70 : 40);
-    const byWidth = Math.min(1200, window.innerWidth - 24);
-    const byHeight = (window.innerHeight - reserved) * ratio;
-    const bw = Math.max(Math.min(byWidth, byHeight), Math.min(byWidth, 320));
-    document.documentElement.style.setProperty("--bw", Math.floor(bw) + "px");
+    if (!board) return;
+    setLayout();
+    const img = $("boardImg"), iw = img.naturalWidth, ih = img.naturalHeight;
+    if (!iw || !ih) return;
+    const W = $("playScreen").clientWidth || window.innerWidth, H = $("playScreen").clientHeight || window.innerHeight, m = 6;
+    const T = $("hud").offsetHeight - 8, B = m;
+    const rs = (layout.rects || []).slice(0, 10);
+    if (!rs.length) return;
+    const ux0 = Math.min(...rs.map((r) => r[0])) / 100 * iw, uy0 = Math.min(...rs.map((r) => r[1])) / 100 * ih;
+    const ux1 = Math.max(...rs.map((r) => r[0] + r[2])) / 100 * iw, uy1 = Math.max(...rs.map((r) => r[1] + r[3])) / 100 * ih;
+    let s = Math.max(W / iw, H / ih);
+    s = Math.min(s, (W - 2 * m) / (ux1 - ux0), (H - T - B) / (uy1 - uy0));
+    const bw = iw * s, bh = ih * s;
+    const place = (len, view, u0, u1, lo, hi) => {
+      // المجال الذي يُبقي الصناديق ظاهرة، ثم المجال الذي يُبقي الصورة مغطية للشاشة
+      const aMin = lo - u0 * s, aMax = hi - u1 * s;
+      const cMin = Math.min(0, view - len), cMax = Math.max(0, view - len);
+      let mid = (view - len) / 2;
+      const lo2 = Math.max(aMin, cMin), hi2 = Math.min(aMax, cMax);
+      if (lo2 <= hi2) return Math.min(hi2, Math.max(lo2, mid));
+      return Math.min(aMax, Math.max(aMin, (lo + hi) / 2 - (u0 + u1) / 2 * s));
+    };
+    const left = place(bw, W, ux0, ux1, m, W - m), top = place(bh, H, uy0, uy1, T, H - B);
+    Object.assign($("board").style, { width: bw + "px", height: bh + "px", left: left + "px", top: top + "px" });
   }
   $("boardImg").addEventListener("load", fit);
   window.addEventListener("resize", fit);
   window.addEventListener("orientationchange", () => setTimeout(fit, 250));
+  if (window.screen && screen.orientation) screen.orientation.addEventListener("change", () => setTimeout(fit, 150));
 
   /* ---------- فتح صندوق ---------- */
   function openBox(i) {
