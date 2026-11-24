@@ -481,6 +481,22 @@
     const all = [].concat((cfg.boards || []).map((b) => b.src), boxes.flatMap((b) => [b.i, b.v, b.s]), (cfg.customSounds || []).map((c) => c.src), [cfg.sound, cfg.finale]);
     return [...new Set(all.filter((x) => typeof x === "string" && x.startsWith("fs:")))];
   }
+  // مكتبة أصواتك: تُحفظ في حسابك فور إضافتها، وتبقى في القوائم على كل الأجهزة ولو لم تنشر
+  let library = [];
+  async function readLibrary(cfg) {
+    const { F, db } = await window.sanadeeqFB;
+    let list = [];
+    try { const d = await F.getDoc(F.doc(db, "site", "library")); if (d.exists()) list = JSON.parse(d.data().json || "[]"); } catch (e) {}
+    list = (Array.isArray(list) ? list : []).filter((c) => c && c.id && typeof c.src === "string" && c.src.startsWith("fs:"));
+    // الأصوات التي أضفتها قبل وجود المكتبة تنتقل إليها
+    const old = ((cfg && cfg.customSounds) || []).filter((c) => c && c.src && c.src.startsWith("fs:") && !list.some((x) => x.src === c.src));
+    if (old.length) { list = list.concat(old.map((c) => ({ id: c.id, name: c.name, src: c.src }))); saveLibrary(list).catch(() => {}); }
+    return list;
+  }
+  async function saveLibrary(list) {
+    const { F, db } = await window.sanadeeqFB;
+    await F.setDoc(F.doc(db, "site", "library"), { json: JSON.stringify(list.map((c) => ({ id: c.id, name: c.name, src: c.src }))), updated: Date.now() });
+  }
   async function loadFsFiles(refs) {
     const { F, db } = await window.sanadeeqFB;
     await Promise.all(refs.filter((r) => !localImg[r]).map(async (r) => {
@@ -539,7 +555,8 @@
 
   /* ---------- الأصوات ---------- */
   const allSounds = () => builtins.map((b) => ({ key: "b:" + b.id, name: b.name, src: b.src, builtin: true }))
-    .concat(state.customSounds.map((c) => ({ key: "c:" + c.id, name: c.name, src: c.src, builtin: false })));
+    .concat(library.map((c) => ({ key: "l:" + c.id, name: c.name, src: c.src, builtin: false })))
+    .concat(state.customSounds.filter((c) => !library.some((x) => x.src === c.src)).map((c) => ({ key: "c:" + c.id, name: c.name, src: c.src, builtin: false })));
   const keyOfSrc = (s) => { const x = allSounds().find((o) => o.src === s); return x ? x.key : ""; };
   const srcOfKey = (k) => { const x = allSounds().find((o) => o.key === k); return x ? x.src : ""; };
   const nameOfSrc = (s) => { if (!s) return "بلا صوت"; const x = allSounds().find((o) => o.src === s); return x ? x.name : "صوت محذوف"; };
@@ -569,8 +586,18 @@
       list.forEach((s) => g.appendChild(new Option(s.name, s.key)));
       sel.appendChild(g);
     });
+    sel.add(new Option("➕ إضافة صوت جديد من جهازك…", ADD));
     sel.value = value;
     if (sel.value !== value) sel.value = head[0][0];
+    sel.dataset.prev = sel.value;
+  }
+  // اختيار «إضافة صوت جديد» من أي قائمة: يرجع الاختيار السابق، ويفتح الملفات، ثم يُختار الصوت الجديد في هذه القائمة
+  const ADD = "__add";
+  function addFromSelect(sel, assign) {
+    if (sel.value !== ADD) { sel.dataset.prev = sel.value; return false; }
+    sel.value = sel.dataset.prev || "";
+    pickSoundFile(assign);
+    return true;
   }
   function renderSounds() {
     const grid = $("soundGrid");
@@ -604,7 +631,9 @@
     });
     fillSoundOptions($("finaleSel"), [["", "بلا صوت"]], state.finale ? keyOfSrc(state.finale) : "");
   }
-  $("finaleSel").addEventListener("change", () => { const v = $("finaleSel").value; state.finale = v ? srcOfKey(v) : ""; changed(); if (state.finale) playSound(state.finale); });
+  $("finaleSel").addEventListener("change", () => {
+    if (addFromSelect($("finaleSel"), (src) => { state.finale = src; renderSounds(); changed(); })) return;
+    const v = $("finaleSel").value; state.finale = v ? srcOfKey(v) : ""; changed(); if (state.finale) playSound(state.finale); });
   $("finalePlay").addEventListener("click", () => { if (state.finale) playSound(state.finale); else toast("لم تختر صوتاً للتهنئة"); });
 
   const boxEffective = (b) => (b.s === "none" ? "" : b.s || state.sound);
@@ -615,7 +644,16 @@
   function refreshBoxSounds() {
     [...$("boxes").children].forEach((card, i) => { const sel = card.querySelector(".box-sound select"); if (sel) fillBoxSound(sel, state.boxes[i]); });
   }
-  function removeCustomSound(s) {
+  async function removeCustomSound(s) {
+    const inLib = library.some((c) => c.src === s);
+    if (inLib) {
+      const before = library;
+      library = library.filter((c) => c.src !== s);
+      try { await saveLibrary(library); }
+      catch (e) { library = before; toast(explain(e)); return; }
+      // يبقى الملف إن كان الطلاب يسمعونه في المنشور الآن؛ يُحذف عند النشر التالي
+      if (!fsRefs(base).includes(s)) { try { const { F, db } = await window.sanadeeqFB; await F.deleteDoc(F.doc(db, "files", s.slice(3))); } catch (e) {} }
+    }
     state.customSounds = state.customSounds.filter((c) => c.src !== s);
     if (state.sound === s) state.sound = DEFAULT_SOUND;
     if (state.finale === s) state.finale = DEFAULT_FINALE;
@@ -661,21 +699,38 @@
       setTimeout(() => $("sndName").select(), 30);
     } catch (e) { toast("تعذّرت قراءة هذا الملف الصوتي. جرّب ملف MP3."); }
   }
-  $("addSoundBtn").addEventListener("click", () => {
+  let addTarget = null;          // ما يُختار له الصوت بعد إضافته (صندوق أو التهنئة)
+  function pickSoundFile(assign) {
+    addTarget = assign || null;
     const inp = $("audioIn");
     inp.value = "";
     inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) prepareSound(f); };
     inp.click();
-  });
+  }
+  $("addSoundBtn").addEventListener("click", () => pickSoundFile(null));
   $("sndTry").addEventListener("click", () => { if (pendingSound) playSound(pendingSound.data); });
-  $("sndCancel").addEventListener("click", () => { stopSound(); pendingSound = null; hide("sndModal"); });
-  $("sndAdd").addEventListener("click", () => {
+  $("sndCancel").addEventListener("click", () => { stopSound(); pendingSound = null; addTarget = null; hide("sndModal"); });
+  $("sndAdd").addEventListener("click", async () => {
     if (!pendingSound) return;
     const name = $("sndName").value.trim() || "صوتي";
-    state.customSounds.push({ id: "c" + Date.now().toString(36), name, src: pendingSound.data, ext: pendingSound.ext });
+    if (pendingSound.data.length > MAX_FILE) { toast("الصوت كبير جداً؛ اختر مقطعاً أقصر"); return; }
+    const btn = $("sndAdd"); btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
+    const id = "snd" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ref = "fs:" + id;
+    try {
+      const { F, db } = await window.sanadeeqFB;
+      await F.setDoc(F.doc(db, "files", id), { d: pendingSound.data });
+      localImg[ref] = pendingSound.data;
+      library = library.concat([{ id, name, src: ref }]);
+      await saveLibrary(library);
+    } catch (e) {
+      library = library.filter((c) => c.src !== ref);
+      toast(explain(e)); return;
+    } finally { btn.disabled = false; btn.textContent = "إضافة الصوت"; }
     pendingSound = null; stopSound(); hide("sndModal");
-    renderSounds(); refreshBoxSounds(); changed();
-    toast(`أُضيف «${name}» إلى الأصوات؛ اختره لكل الصناديق أو لصندوق معيّن`);
+    const assign = addTarget; addTarget = null;
+    if (assign) assign(ref);
+    renderSounds(); refreshBoxSounds();
+    toast(`حُفظ «${name}» في أصواتك، وستجده في كل القوائم${assign ? "" : "؛ اختره لكل الصناديق أو لصندوق معيّن"}`);
   });
   let started = false, fb = null;
   const isTeacherUser = (u) => u && !u.isAnonymous && (u.email || "").toLowerCase() === TEACHER;
@@ -698,7 +753,8 @@
     showLoading("جارٍ تحميل الصناديق…");
     try {
       const [cfg] = await Promise.all([readConfig(), loadLibrary()]);
-      await loadFsFiles(fsRefs(cfg));
+      library = await readLibrary(cfg);
+      await loadFsFiles(fsRefs(cfg).concat(library.map((c) => c.src)));
       base = cfg || { version: 0 };
       state = fromConfig(cfg);
       dirty = false;
@@ -799,6 +855,7 @@
       const sndSel = card.querySelector(".box-sound select");
       fillBoxSound(sndSel, b);
       sndSel.addEventListener("change", () => {
+        if (addFromSelect(sndSel, (src) => { b.s = src; refreshBoxSounds(); changed(); })) return;
         const v = sndSel.value;
         b.s = v === "none" ? "none" : v ? srcOfKey(v) : "";
         changed();
@@ -1270,7 +1327,7 @@
       for (const f of files) await F.setDoc(F.doc(db, "files", f.id), { d: f.data });
       await F.setDoc(F.doc(db, "site", "config"), { json: JSON.stringify(cfg), version });
       // حذف الملفات التي لم تعد مستخدمة
-      const keep = new Set(fsRefs(cfg));
+      const keep = new Set(fsRefs(cfg).concat(library.map((c) => c.src)));
       for (const r of fsRefs(base)) if (!keep.has(r)) { try { await F.deleteDoc(F.doc(db, "files", r.slice(3))); } catch (e) {} }
       files.forEach((f) => { localImg[f.ref] = f.data; });
       base = cfg;
