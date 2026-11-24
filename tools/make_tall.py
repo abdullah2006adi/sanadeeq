@@ -82,11 +82,26 @@ def make(n):
     res = [None] * 10
     for k, num, x, yv, w, h in rects:
         res[num] = [round(100 * x / TW, 2), round(100 * (ys[base + k] + yv) / TH, 2), round(100 * w / TW, 2), round(100 * h / TH, 2)]
-    # تكبير ليكون حاداً على شاشات الجوال
+    out, res = widen(out, res); TH, TW = out.shape[:2]
     scale = 1080 / TW
     out = cv2.resize(out, (1080, round(TH * scale)), interpolation=cv2.INTER_LANCZOS4)
     cv2.imwrite(f"{OUT}/board{n}-tall.jpg", out, [cv2.IMWRITE_JPEG_QUALITY, 86])
     return res, out.shape[:2]
+
+ASPECT = 9 / 16
+def widen(out, res):
+    """يوسّع الصورة إلى 9:16 بمدّ الخلفية على الجانبين (انعكاس + ضباب) بلا صناديق إضافية"""
+    TH, TW = out.shape[:2]; NW = int(round(TH * ASPECT))
+    if NW <= TW: return out, res
+    e = (NW - TW) // 2; NW = TW + 2 * e
+    ref = cv2.copyMakeBorder(out, 0, 0, e, e, cv2.BORDER_REFLECT_101).astype(np.float32)
+    soft = cv2.GaussianBlur(ref, (0, 0), 22) * 0.6
+    x = np.arange(NW, dtype=np.float32)
+    dist = np.maximum(e - x, x - (e + TW - 1)).clip(0) / max(1, e)       # 0 داخل الأصل، 1 عند الحافة
+    w = np.clip(dist * 2.2, 0, 1)[None, :, None]
+    # حافة الصورة الأصلية تذوب تدريجياً في الامتداد
+    res2 = [[round((r[0] * TW / 100 + e) / NW * 100, 2), r[1], round(r[2] * TW / NW, 2), r[3]] for r in res]
+    return (ref * (1 - w) + soft * w).clip(0, 255).astype(np.uint8), res2
 
 CELLS = {1}
 def cells(n, img, R, t1, t2, d, by0, by1, top_h, pairs):
@@ -125,6 +140,7 @@ def cells(n, img, R, t1, t2, d, by0, by1, top_h, pairs):
     TH, TW = out.shape[:2]; res = [None] * 10
     for k, num, x, yv, w, h in rects:
         res[num] = [round(100 * x / TW, 2), round(100 * (ys[base + k] + yv) / TH, 2), round(100 * w / TW, 2), round(100 * h / TH, 2)]
+    out, res = widen(out, res); TH, TW = out.shape[:2]
     out = cv2.resize(out, (1080, round(TH * 1080 / TW)), interpolation=cv2.INTER_LANCZOS4)
     cv2.imwrite(f"{OUT}/board{n}-tall.jpg", out, [cv2.IMWRITE_JPEG_QUALITY, 86])
     return res, out.shape[:2]
